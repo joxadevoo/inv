@@ -1,0 +1,20 @@
+{
+  "name": "tashkilot-moddiy-boyliklari-inventarizatsiya",
+  "version": "1.0.0",
+  "description": "Tashkilot moddiy boyliklarini (mebel, texnika, kompyuterlar) QR-kod va Excel bazasi orqali boshqarish hamda Xprinter 40x30mm stiker chop etish tizimi.",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx -y http-server -p 3000 -o"
+  },
+  "keywords": [
+    "inventory",
+    "assets",
+    "qr-code",
+    "xprinter",
+    "excel",
+    "sheetjs",
+    "minimalist"
+  ],
+  "author": "Antigravity",
+  "license": "MIT"
+}

@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moddiy Boyliklar Inventarizatsiyasi | Professional Enterprise</title>
+  <meta name="description" content="Tashkilot, qavat va xonalar ierarxiyasi bo'yicha moddiy boyliklarni (mebel, texnika) boshqarish, Xprinter 40x30mm stiker chop etish va Excel bazasi tizimi.">
+  
+  <!-- Google Fonts: Inter va Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Asosiy uslublar (Cache Buster qo'shildi: v=3) -->
+  <link rel="stylesheet" href="style.css?v=3">
+  
+  <!-- SheetJS CDN (Excel import/export uchun) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <!-- QRious CDN (Oflayn QR-kod generatsiya qilish uchun) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+  <!-- FIREBASE COMPAT SDKs (Onlayn real-time ma'lumotlar bazasi integratsiyasi) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <!-- TO'LIQ EKRANLI ASOSIY INTERFEYS -->
+  <div class="full-screen-app" id="fullScreenApp">
+    
+    <!-- CHAP PANEL: HUDUDLAR DARAXTI (SIDEBAR NAVIGATION) -->
+    <aside class="location-sidebar" id="locationSidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <svg class="sidebar-logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+            <rect x="3" y="3" width="7" height="9"></rect>
+            <rect x="14" y="3" width="7" height="5"></rect>
+            <rect x="14" y="12" width="7" height="9"></rect>
+            <rect x="3" y="16" width="7" height="5"></rect>
+          </svg>
+          <span class="logo-text">Joylashuvlar</span>
+        </div>
+        <div style="display: flex; gap: 0.35rem; align-items: center;">
+          <button id="addOrgBtn" class="add-btn-small" title="Yangi Tashkilot (Filial) Qo'shish">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+          <button id="collapseSidebarBtn" class="add-btn-small" title="Chap panelni yopish">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Daraxt ro'yxati -->
+      <div class="location-tree-container">
+        <!-- Global ko'rinish -->
+        <div class="location-tree-item global-item active" id="globalLocationItem" data-type="GLOBAL">
+          <svg class="tree-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          <span class="tree-text">Barcha Aktivlar</span>
+        </div>
+
+        <!-- Dinamik tashkilotlar daraxti shu yerga yuklanadi -->
+        <div class="orgs-tree-wrapper" id="orgsTreeWrapper"></div>
+      </div>
+      
+      <!-- Foydalanuvchi ma'lumoti yoki menyu pastki qismi -->
+      <div class="sidebar-footer">
+        <!-- Aktiv foydalanuvchi info paneli (Kirgandan keyin ko'rinadi) -->
+        <div id="userProfileCard" class="user-profile-card" style="display: none; margin-bottom: 0.85rem;">
+          <div class="user-avatar-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="user-avatar-icon"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </div>
+          <div class="user-profile-details">
+            <span id="userEmailLabel" class="user-email-label">—</span>
+            <span id="userRoleBadge" class="user-role-badge">Viewer</span>
+          </div>
+          <button id="logoutBtn" class="action-icon-small logout-btn" title="Tizimdan Chiqish">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          </button>
+        </div>
+
+        <!-- Admin uchun Foydalanuvchilar Boshqaruvi tugmasi -->
+        <button id="adminUsersManagementBtn" class="btn btn-secondary btn-icon sidebar-theme-btn" style="display: none; margin-bottom: 0.5rem; justify-content: flex-start;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span class="theme-btn-text">Xodimlar Boshqaruvi</span>
+        </button>
+
+        <button id="themeToggleBtn" class="btn btn-secondary btn-icon sidebar-theme-btn">
+          <svg class="theme-sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          <span class="theme-btn-text">Qorong'u Mavzu</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- O'NG PANEL: ASOSIY MAZMUN (MAIN WORKSPACE) -->
+    <main class="main-workspace" id="mainWorkspace">
+      
+      <!-- Yuqori boshqaruv sarlavhasi (Topbar) -->
+      <header class="workspace-header">
+        <div class="header-breadcrumbs">
+          <button id="expandSidebarBtn" class="add-btn-small" title="Chap panelni ochish" style="display: none; margin-right: 0.75rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+          <span class="breadcrumb-item" id="bcOrg">Barcha Aktivlar</span>
+          <span class="breadcrumb-arrow" id="bcArrow1" style="display: none;">&rarr;</span>
+          <span class="breadcrumb-item" id="bcFloor" style="display: none;"></span>
+          <span class="breadcrumb-arrow" id="bcArrow2" style="display: none;">&rarr;</span>
+          <span class="breadcrumb-item" id="bcRoom" style="display: none;"></span>
+        </div>
+        
+        <div class="topbar-actions">
+          <!-- BULUT STATUSTI VA SOZLAMALARI TUGMASI -->
+          <button id="cloudSettingsBtn" class="btn btn-secondary btn-icon" title="Onlayn Bulut Sozlamalari (Firebase)">
+            <span class="cloud-status-dot offline" id="cloudStatusDot"></span>
+            <span id="cloudStatusText">Oflayn Rejim</span>
+          </button>
+
+          <button id="exportExcelBtn" class="btn btn-secondary btn-icon" title="Hozirgi ko'rinishni Excelga yuklab olish">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Excelga Eksport
+          </button>
+          
+          <button id="triggerImportExcelBtn" class="btn btn-secondary btn-icon" title="Zaxira Excel faylidan tiklash">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Exceldan Import
+          </button>
+          <input type="file" id="importExcelInput" accept=".xlsx, .xls, .csv" style="display: none;">
+        </div>
+      </header>
+
+      <!-- Dashboard statistikasi -->
+      <section class="workspace-dashboard" aria-label="Joylashuv Statistikasi">
+        <div class="stats-grid">
+          <div class="stat-card" id="statCardTotal">
+            <div class="stat-icon-wrapper total-assets">
+              <svg class="stat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            </div>
+            <div class="stat-details">
+              <h2 class="stat-value" id="totalAssetsCount">0</h2>
+              <p class="stat-label">Jami Aktivlar</p>
+            </div>
+          </div>
+          
+          <div class="stat-card" id="statCardValue">
+            <div class="stat-icon-wrapper total-valuation">
+              <svg class="stat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+            <div class="stat-details">
+              <h2 class="stat-value" id="totalAssetsValue">0 UZS</h2>
+              <p class="stat-label">Balans Qiymati</p>
+            </div>
+          </div>
+
+          <div class="stat-card" id="statCardActive">
+            <div class="stat-icon-wrapper active-assets">
+              <svg class="stat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <div class="stat-details">
+              <h2 class="stat-value" id="activeAssetsCount">0</h2>
+              <p class="stat-label">Ishlatilmoqda</p>
+            </div>
+          </div>
+
+          <div class="stat-card" id="statCardRepair">
+            <div class="stat-icon-wrapper repair-assets">
+              <svg class="stat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+            </div>
+            <div class="stat-details">
+              <h2 class="stat-value" id="repairAssetsCount">0</h2>
+              <p class="stat-label">Ta'mirlashda</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Filtrlar va Qidiruv Panel -->
+      <section class="workspace-controls" aria-label="Qidiruv va Amallar">
+        <div class="search-filter-row">
+          <div class="search-box-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="assetSearchInput" placeholder="Jihoz nomi, inventar raqami, mas'ul..." aria-label="Qidiruv">
+          </div>
+          
+          <div class="filter-wrapper">
+            <select id="categoryFilter" aria-label="Kategoriya filtri">
+              <option value="ALL">Barcha Kategoriyalar</option>
+              <option value="Kompyuter va Texnika">Kompyuter va Texnika</option>
+              <option value="Mebel va Jihozlar">Mebel va Jihozlar</option>
+              <option value="Orgtexnika">Orgtexnika</option>
+              <option value="Konditsioner va Maishiy">Konditsioner va Maishiy</option>
+              <option value="Boshqa">Boshqa</option>
+            </select>
+          </div>
+
+          <div class="filter-wrapper">
+            <select id="statusFilter" aria-label="Holat filtri">
+              <option value="ALL">Barcha Holatlar</option>
+              <option value="Ishlatilmoqda">Ishlatilmoqda</option>
+              <option value="Zaxirada / Omborda">Zaxirada / Omborda</option>
+              <option value="Ta'mirlashda">Ta'mirlashda</option>
+              <option value="Hisobdan chiqarilgan">Hisobdan chiqarilgan</option>
+            </select>
+          </div>
+
+          <button id="addAssetBtn" class="btn btn-primary btn-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Jihoz Qo'shish
+          </button>
+        </div>
+      </section>
+
+      <!-- Excel Drag & Drop Zona -->
+      <div class="excel-drop-zone" id="excelDropZone">
+        <svg class="drop-zone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <p class="drop-zone-text">Tiklash uchun <strong>Excel faylini sudrab tashlang</strong> yoki bosing.</p>
+      </div>
+
+      <!-- Asosiy jihozlar jadvali -->
+      <div class="workspace-table-container" id="tableContainer">
+        <table class="assets-table" id="assetsTable">
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="id">Inventar №</th>
+              <th class="sortable" data-sort="name">Jihoz Nomi</th>
+              <th class="sortable" data-sort="category">Kategoriya</th>
+              <th class="sortable" data-sort="status">Holati</th>
+              <th class="sortable" data-sort="org">Joylashuvi (Ierarxiya)</th>
+              <th class="sortable" data-sort="owner">Mas'ul xodim</th>
+              <th class="sortable" data-sort="price">Sotib olish narxi</th>
+              <th class="sortable" data-sort="date">Sotib olingan sana</th>
+              <th class="actions-col">Amallar</th>
+            </tr>
+          </thead>
+          <tbody id="assetsTableBody">
+            <!-- JS dynamic content -->
+          </tbody>
+        </table>
+        
+        <div id="noDataMessage" class="no-data-message" style="display: none;">
+          <svg class="no-data-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+          <p>Ushbu joylashuvda hech qanday jihoz topilmadi. "+ Jihoz Qo'shish" tugmasini bosing.</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODAL: JIHOD QO'SHISH / TAHRIRLASH -->
+  <div class="modal-overlay" id="assetModal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle" class="modal-title">Yangi Aktiv Qo'shish</h3>
+        <button id="closeModalBtn" class="close-btn" aria-label="Yopish">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <form id="assetForm" class="asset-form">
+        <input type="hidden" id="assetFormAction" value="ADD"> 
+        <input type="hidden" id="originalAssetId">
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="formAssetId">Inventar Raqami (Majburiy) *</label>
+            <input type="text" id="formAssetId" placeholder="INV-26-0001" required>
+          </div>
+
+          <div class="form-group">
+            <label for="formAssetName">Jihoz Nomi (Majburiy) *</label>
+            <input type="text" id="formAssetName" placeholder="HP LaserJet Printer..." required>
+          </div>
+
+          <div class="form-group">
+            <label for="formAssetCategory">Kategoriya *</label>
+            <select id="formAssetCategory" required>
+              <option value="Kompyuter va Texnika">Kompyuter va Texnika</option>
+              <option value="Mebel va Jihozlar">Mebel va Jihozlar</option>
+              <option value="Orgtexnika">Orgtexnika</option>
+              <option value="Konditsioner va Maishiy">Konditsioner va Maishiy</option>
+              <option value="Boshqa">Boshqa</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="formAssetStatus">Holati *</label>
+            <select id="formAssetStatus" required>
+              <option value="Ishlatilmoqda">Ishlatilmoqda</option>
+              <option value="Zaxirada / Omborda">Zaxirada / Omborda</option>
+              <option value="Ta'mirlashda">Ta'mirlashda</option>
+              <option value="Hisobdan chiqarilgan">Hisobdan chiqarilgan</option>
+            </select>
+          </div>
+
+          <!-- IERARXIK JOYLAShUV TANLOVLARI (CASCADING DROPDOWNS) -->
+          <div class="form-group">
+            <label for="formAssetOrg">Tashkilot / Filial *</label>
+            <select id="formAssetOrg" required>
+              <!-- Dinamik to'ldiriladi -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="formAssetFloor">Qavat *</label>
+            <select id="formAssetFloor" required>
+              <!-- Tashkilotga qarab dinamik o'zgaradi -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="formAssetRoom">Xona *</label>
+            <select id="formAssetRoom" required>
+              <!-- Qavatga qarab dinamik o'zgaradi -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="formAssetOwner">Mas'ul Xodim</label>
+            <input type="text" id="formAssetOwner" placeholder="Aliyev Ali">
+          </div>
+
+          <div class="form-group">
+            <label for="formAssetPrice">Sotib Olingan Narxi (UZS)</label>
+            <input type="number" id="formAssetPrice" placeholder="5000000" min="0">
+          </div>
+
+          <div class="form-group">
+            <label for="formAssetDate">Sotib Olingan Sana</label>
+            <input type="date" id="formAssetDate">
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="formAssetNotes">Izoh va Qo'shimcha Ma'lumot</label>
+          <textarea id="formAssetNotes" placeholder="Jihoz holati yoki tafsilotlar..." rows="3"></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancelModalBtn" class="btn btn-secondary">Bekor qilish</button>
+          <button type="submit" id="saveAssetSubmitBtn" class="btn btn-primary">Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: YANGI HUDUD QO'SHISH (Tashkilot, Qavat, Xona) -->
+  <div class="modal-overlay" id="locationModal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 id="locationModalTitle" class="modal-title">Yangi Joylashuv Qo'shish</h3>
+        <button id="closeLocModalBtn" class="close-btn" aria-label="Yopish">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <form id="locationForm" class="location-form">
+        <!-- Qaysi turdagi joylashuv qo'shilayotgani (ORG, FLOOR, ROOM) -->
+        <input type="hidden" id="locFormType" value="ORG">
+        <input type="hidden" id="locParentOrg" value="">
+        <input type="hidden" id="locParentFloor" value="">
+
+        <div class="modal-body">
+          <div class="form-group" style="width: 100%;">
+            <label id="locInputLabel" for="locNameInput">Tashkilot Nomi *</label>
+            <input type="text" id="locNameInput" placeholder="Masalan: Bosh Ofis..." required>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancelLocModalBtn" class="btn btn-secondary">Bekor qilish</button>
+          <button type="submit" class="btn btn-primary">Qo'shish</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: FIREBASE BULUT SOZLAMALARI -->
+  <div class="modal-overlay" id="cloudSettingsModal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">☁️ Firebase Bulut Sozlamalari</h3>
+        <button id="closeCloudModalBtn" class="close-btn" aria-label="Yopish">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <form id="cloudSettingsForm" class="cloud-settings-form">
+        <div class="modal-body" style="gap: 0.85rem;">
+          <p class="print-instruction" style="margin-bottom: 0.25rem;">
+            Ma'lumotlar bazasini real-time onlayn sinxronlash uchun Firebase Console loyihangizdan olingan web kalitlarni kiriting:
+          </p>
+          
+          <div class="form-group" style="width: 100%;">
+            <label for="cloudApiKey">API Key *</label>
+            <input type="text" id="cloudApiKey" placeholder="AIzaSyA1..." required>
+          </div>
+          
+          <div class="form-group" style="width: 100%;">
+            <label for="cloudProjectId">Project ID *</label>
+            <input type="text" id="cloudProjectId" placeholder="my-inventory-app..." required>
+          </div>
+
+          <div class="form-group" style="width: 100%;">
+            <label for="cloudAppId">App ID *</label>
+            <input type="text" id="cloudAppId" placeholder="1:123456:web:abcd..." required>
+          </div>
+
+          <div class="form-group" style="width: 100%;">
+            <label for="cloudAuthDomain">Auth Domain (Ixtiyoriy)</label>
+            <input type="text" id="cloudAuthDomain" placeholder="my-inventory-app.firebaseapp.com">
+          </div>
+
+          <div class="print-config-tip" style="margin-top: 0.5rem; line-height: 1.35;">
+            <strong>📌 Bosqichlar:</strong>
+            <ul>
+              <li>Firebase Console-da loyiha yarating.</li>
+              <li>Loyihada <strong>Cloud Firestore</strong> bazasini oching (Ishga tushirishda Test Mode tanlang).</li>
+              <li>Loyiha sozlamalarida yangi <strong>Web App</strong> (</>) ochib, ushbu konfiguratsiya kalitlarini yuklang.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="justify-content: space-between;">
+          <!-- Bulutdan uzish tugmasi -->
+          <button type="button" id="disconnectCloudBtn" class="btn btn-secondary" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3); display: none;">Bulutdan Uzish</button>
+          
+          <div style="display: flex; gap: 0.5rem; margin-left: auto;">
+            <button type="button" id="cancelCloudModalBtn" class="btn btn-secondary">Bekor qilish</button>
+            <button type="submit" class="btn btn-primary">Ulanish</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: QR-Kod Sticker Preview & Print (40x30mm Xprinter) -->
+  <div class="modal-overlay" id="qrPrintModal" role="dialog" aria-modal="true">
+    <div class="modal-card print-preview-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Xprinter 40x30mm Stiker Preview</h3>
+        <button id="closeQrModalBtn" class="close-btn" aria-label="Yopish">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      
+      <div class="modal-body qr-print-body">
+        <p class="print-instruction">Ushbu sticker Xprinter 40x30mm termal qog'oziga yuqori kontrastli qilib monoxrom formatda chiqariladi.</p>
+        
+        <div class="sticker-border-container">
+          <div class="sticker-dimensions-ruler-w">40 mm</div>
+          <div class="sticker-dimensions-ruler-h">30 mm</div>
+          
+          <!-- STIKER ELEMENTI (Monoxrom chop etish uchun tayyor) -->
+          <div class="xprinter-sticker-element" id="xprinterStickerElement">
+            <div class="sticker-qr-side">
+              <canvas id="stickerQrCanvas" width="100" height="100"></canvas>
+            </div>
+            
+            <div class="sticker-info-side">
+              <div class="sticker-header-org" id="stickerOrgName">BOSH OFIS</div>
+              <div class="sticker-inv-num" id="stickerInvNum">INV-26-0001</div>
+              <div class="sticker-asset-name" id="stickerAssetName">Lenovo ThinkPad</div>
+              <div class="sticker-owner" id="stickerOwner">M: A. Aliyev</div>
+              <div class="sticker-location" id="stickerLocation">Fl: 1 / Rm: 101</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="print-config-tip">
+          <strong>💡 Xprinter Termal Sozlamalari:</strong>
+          <ul>
+            <li>Paper Size: <strong>40x30 mm</strong></li>
+            <li>Margins: <strong>None (0)</strong></li>
+            <li>Headers & Footers: <strong>O'chirilgan (Unchecked)</strong></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="closeQrModalBtn2" class="btn btn-secondary">Yopish</button>
+        <button type="button" id="executePrintStickerBtn" class="btn btn-primary btn-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" width="16" height="16"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Chop Etish
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL OYNA: ZAMONAVIY TIZIMGA KIRISh / RO'YXATDAN O'TISh (AUTH LOGIN SCREEN) -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="landing-container">
+      <!-- Chap Ustun: Landing Page (Platforma Haqida Ma'lumot va Skrinshotlar) -->
+      <div class="landing-hero-section">
+        <div class="landing-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="32" height="32" style="color: var(--accent);"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+          <span class="auth-logo-text" style="font-size: 1.4rem;">Inventarizatsiya</span>
+        </div>
+        
+        <h1 class="landing-title">Tashkilotingiz Aktivlarini Aqlli Boshqaring</h1>
+        <p class="landing-subtitle">Mebel, texnika, kompyuterlar va har qanday moddiy boyliklarni QR-kod, ierarxik tizim va Firebase buluti orqali real vaqtda ro'yxatga oling hamda nazorat qiling.</p>
+        
+        <!-- Premium Baza Skrinshoti -->
+        <div class="landing-screenshot-container">
+          <img class="landing-screenshot" src="dashboard_mockup.png" alt="Aktivlar boshqaruvi tizimi interfeysi">
+        </div>
+        
+        <!-- Tizim afzalliklari gridi -->
+        <div class="landing-features-grid">
+          <div class="landing-feature-card">
+            <div class="landing-feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                <path d="M12 2C6.5 2 2 4.5 2 7v10c0 2.5 4.5 5 10 5s10-2.5 10-5V7c0-2.5-4.5-5-10-5z"></path>
+                <path d="M2 7c0 2.5 4.5 5 10 5s10-2.5 10-5"></path>
+                <path d="M2 12c0 2.5 4.5 5 10 5s10-2.5 10-5"></path>
+              </svg>
+            </div>
+            <div>
+              <h4 class="landing-feature-title">Real-Time Firestore Buluti</h4>
+              <p class="landing-feature-desc">Barcha xodimlar ekranlarida ma'lumotlar sahifani yangilamasdan 1 soniyada jonli yangilanadi.</p>
+            </div>
+          </div>
+          
+          <div class="landing-feature-card">
+            <div class="landing-feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <path d="M9 11l2 2 4-4"></path>
+              </svg>
+            </div>
+            <div>
+              <h4 class="landing-feature-title">Oflayn Bardoshlilik (Cache)</h4>
+              <p class="landing-feature-desc">Internet uzilganda ham ishlashda davom eting, aloqa tiklanishi bilan fonda avtomatik sinxronlashadi.</p>
+            </div>
+          </div>
+
+          <div class="landing-feature-card">
+            <div class="landing-feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                <rect x="3" y="3" width="6" height="6" rx="1"></rect>
+                <rect x="15" y="15" width="6" height="6" rx="1"></rect>
+                <rect x="3" y="15" width="6" height="6" rx="1"></rect>
+                <path d="M6 9v6M6 12h12v3"></path>
+              </svg>
+            </div>
+            <div>
+              <h4 class="landing-feature-title">Ierarxik Geografik Tuzilish</h4>
+              <p class="landing-feature-desc">Tashkilot ➡️ Qavat ➡️ Xona bo'yicha cheksiz darajali geometrik joylashuv va jihozlar ierarxiyasi.</p>
+            </div>
+          </div>
+
+          <div class="landing-feature-card">
+            <div class="landing-feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            </div>
+            <div>
+              <h4 class="landing-feature-title">Excel Zaxiralash (Backup)</h4>
+              <p class="landing-feature-desc">Barcha jihozlarni bitta tugma bilan Excelga eksport qiling yoki Excel import orqali bazani noldan qayta tiklang.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- O'ng Ustun: Kirish / Ro'yxatdan O'tish Formasi paneli -->
+      <div class="landing-auth-section">
+        <div class="auth-card" style="box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); background-color: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px);">
+          <div class="auth-header">
+            <div class="auth-logo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28" style="color: var(--accent);"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+              <span class="auth-logo-text">Kirish Tizimi</span>
+            </div>
+            <p class="auth-subtitle" id="authSubtitle">Moddiy boyliklar va aktivlar hisobi tizimi</p>
+          </div>
+
+          <form id="authForm" class="auth-form">
+            <!-- Rejimni boshqaruvchi yashirin input (LOGIN yoki REGISTER) -->
+            <input type="hidden" id="authMode" value="LOGIN">
+
+            <div class="form-group" style="width: 100%;">
+              <label for="authEmail">E-mail (Elektron Pochta) *</label>
+              <input type="email" id="authEmail" placeholder="xodim@tashkilot.uz" required>
+            </div>
+
+            <div class="form-group" style="width: 100%;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label for="authPassword">Maxfiy Parol *</label>
+                <button type="button" id="forgotPasswordBtn" class="auth-toggle-btn-link" style="font-size: 0.7rem; text-transform: none; font-weight: normal; margin-bottom: 2px; background: none; border: none; padding: 0; cursor: pointer;">Parolni unutdingizmi?</button>
+              </div>
+              <input type="password" id="authPassword" placeholder="••••••••" minlength="6" required>
+            </div>
+
+            <!-- Ro'yxatdan o'tish rejimida ko'rinadigan qo'shimcha maydon -->
+            <div class="form-group" id="authConfirmPasswordGroup" style="width: 100%; display: none;">
+              <label for="authConfirmPassword">Parolni Tasdiqlang *</label>
+              <input type="password" id="authConfirmPassword" placeholder="••••••••" minlength="6">
+            </div>
+
+            <button type="submit" id="authSubmitBtn" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-size: 0.95rem; margin-top: 0.5rem;">
+              Tizimga Kirish
+            </button>
+
+            <div class="auth-toggle-link-wrapper">
+              <span id="authToggleQuestionText">Tizimda birinchi marta ishtirok etyapsizmi?</span>
+              <button type="button" id="authToggleModeBtn" class="auth-toggle-btn-link">Ro'yxatdan O'tish</button>
+            </div>
+
+            <div style="margin-top: 1.25rem; text-align: center; font-size: 0.7rem; color: var(--text-secondary); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.75rem; width: 100%;">
+              Tizimga kirish orqali siz bizning 
+              <button type="button" id="viewPrivacyLinkBtn" class="auth-toggle-btn-link" style="font-size: 0.7rem; text-transform: none; text-decoration: underline; font-weight: normal; display: inline; background: none; border: none; padding: 0; cursor: pointer;">Maxfiylik Siyosati</button> 
+              va 
+              <button type="button" id="viewTermsLinkBtn" class="auth-toggle-btn-link" style="font-size: 0.7rem; text-transform: none; text-decoration: underline; font-weight: normal; display: inline; background: none; border: none; padding: 0; cursor: pointer;">Foydalanish Shartlari</button> 
+              ga rozilik bildirasiz.
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL OYNA: PAROLNI TIKLASh (FORGOT PASSWORD) -->
+  <div class="modal-overlay" id="forgotPasswordModal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Parolni Tiklash</h3>
+        <button type="button" class="close-btn" id="closeForgotPasswordModalBtn">&times;</button>
+      </div>
+      <form id="forgotPasswordForm">
+        <div class="modal-body" style="gap: 1rem;">
+          <p class="input-helper" style="line-height: 1.4; text-transform: none; font-size: 0.75rem;">Elektron pochtangizni kiriting. Biz sizga maxfiy parolni tiklash havolasini yuboramiz.</p>
+          <div class="form-group" style="width: 100%;">
+            <label for="forgotEmail">E-mail (Elektron Pochta) *</label>
+            <input type="email" id="forgotEmail" placeholder="xodim@tashkilot.uz" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancelForgotPasswordBtn" class="btn btn-secondary">Bekor Qilish</button>
+          <button type="submit" id="submitForgotPasswordBtn" class="btn btn-primary">Havola Yuborish</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL OYNA: MAXFIYLIK SIYOSATI VA SHARTNOMALAR -->
+  <div class="modal-overlay" id="privacyModal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="privacyModalTitle">Maxfiylik Siyosati va Shartlar</h3>
+        <button type="button" class="close-btn" id="closePrivacyModalBtn">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height: 55vh; overflow-y: auto; line-height: 1.6; font-size: 0.8rem; gap: 1rem;" id="privacyModalBody">
+        <h4 style="color: var(--accent); margin-top: 0.5rem; font-size: 0.85rem; font-weight: 600;">1. Ma'lumotlarni yig'ish va undan foydalanish</h4>
+        <p style="color: var(--text-primary);">Tizim faqatgina moddiy aktivlarni hisobga olish, ularni inventarizatsiya qilish va QR stikerlarni chop etish maqsadida foydalanuvchilarning elektron pochta manzillarini hamda tizimdagi faolligini qayd etadi. Hech qanday shaxsiy ma'lumotlar tashqi uchinchi shaxslarga berilmaydi yoki sotilmaydi.</p>
+        
+        <h4 style="color: var(--accent); margin-top: 0.5rem; font-size: 0.85rem; font-weight: 600;">2. Baza va Parollar Xavfsizligi</h4>
+        <p style="color: var(--text-primary);">Barcha maxfiy parollar Google Firebase Authentication xavfsizlik protokollari yordamida shifrlangan holatda saqlanadi. Ma'lumotlar bazasi Cloud Firestore xavfsizlik qoidalari bilan to'liq himoyalangan.</p>
+        
+        <h4 style="color: var(--accent); margin-top: 0.5rem; font-size: 0.85rem; font-weight: 600;">3. Foydalanish Shartlari</h4>
+        <p style="color: var(--text-primary);">Ushbu platformadan faqat tashkilot rahbariyati tomonidan tasdiqlangan va ro'yxatdan o'tgan mas'ul xodimlar (Admin, Staff, Viewer rollari bilan) o'z xizmat vazifalarini bajarish maqsadida foydalanishlari shart. Tizim resurslaridan g'ayriqonuniy foydalanish yoki ma'lumotlarni qasddan buzish qat'iyan man etiladi.</p>
+        
+        <h4 style="color: var(--accent); margin-top: 0.5rem; font-size: 0.85rem; font-weight: 600;">4. Mas'uliyatning cheklanishi</h4>
+        <p style="color: var(--text-primary);">Dasturiy ta'minot "boricha" (as-is) taqdim etiladi. Internet ulanishi, bulutli servis va mahalliy oflayn kesh holatlariga qarab yuzaga keladigan vaqtinchalik uzilishlar uchun ishlab chiquvchilar javobgar emas.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="agreePrivacyBtn" class="btn btn-primary">Tushundim</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL OYNA: XODIMLAR VA ROLLAR BOSHQARUVI (ADMIN USER MANAGEMENT) -->
+  <div class="modal-overlay" id="adminUsersModal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 720px; width: 90%;">
+      <div class="modal-header">
+        <h3 class="modal-title">👥 Xodimlar va Rollar Boshqaruvi</h3>
+        <button type="button" class="close-btn" id="closeAdminUsersModalBtn">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.25rem; max-height: 60vh;">
+        <p class="input-helper" style="margin-bottom: 0.75rem; text-transform: none; font-size: 0.75rem;">Tizimda ro'yxatdan o'tgan xodimlarning rollarini belgilang. Ehtiyot bo'ling, rolni noto'g'ri o'zgartirish tizim xavfsizligiga ta'sir qilishi mumkin.</p>
+        
+        <div style="overflow-x: auto; width: 100%; border: 1px solid var(--border-color); border-radius: var(--radius-md); background-color: var(--bg-input);">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem; min-width: 500px;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); background-color: rgba(255,255,255,0.02);">
+                <th style="padding: 0.75rem 1rem; font-weight: 600; color: var(--text-secondary);">Xodim pochtasi</th>
+                <th style="padding: 0.75rem 1rem; font-weight: 600; color: var(--text-secondary); width: 130px;">Joriy Rol</th>
+                <th style="padding: 0.75rem 1rem; font-weight: 600; color: var(--text-secondary); width: 160px;">Rolni o'zgartirish</th>
+                <th style="padding: 0.75rem 1rem; font-weight: 600; color: var(--text-secondary); width: 80px; text-align: center;">Amal</th>
+              </tr>
+            </thead>
+            <tbody id="adminUsersTableBody">
+              <tr>
+                <td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                  Xodimlar yuklanmoqda...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="closeAdminUsersFooterBtn" class="btn btn-secondary">Yopish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dinamik Dastur Kodlari -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

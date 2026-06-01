@@ -1,0 +1,1790 @@
+/* ==========================================================================
+   MODDIR BOYLIKLAR INVENTARIZATSIYASI - IERARXIK PROFESSIONAL DIZAYN
+   ========================================================================== */
+
+/* Shriftlar va Asosiy parametrlar */
+:root {
+  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Qorong'u Mavzu O'zgaruvchilari (Standart) */
+  --bg-app: #080c14;
+  --bg-sidebar: #0f1524;
+  --bg-card: #121a2e;
+  --bg-input: #1b253f;
+  --border-color: #243153;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  
+  --accent: #4f46e5; /* Indigo */
+  --accent-hover: #4338ca;
+  --accent-light: rgba(79, 70, 229, 0.12);
+  
+  --success: #10b981; /* Emerald */
+  --success-light: rgba(16, 185, 129, 0.12);
+  
+  --warning: #f59e0b; /* Amber */
+  --warning-light: rgba(245, 158, 11, 0.12);
+  
+  --danger: #ef4444; /* Red */
+  --danger-light: rgba(239, 68, 68, 0.12);
+  
+  --info: #06b6d4; /* Cyan */
+  --info-light: rgba(6, 182, 212, 0.12);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -2px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+}
+
+/* Yorug' Mavzu O'zgaruvchilari */
+[data-theme="light"] {
+  --bg-app: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #f1f5f9;
+  --border-color: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  
+  --accent: #4f46e5;
+  --accent-hover: #3730a3;
+  --accent-light: rgba(79, 70, 229, 0.08);
+  
+  --success-light: rgba(16, 185, 129, 0.08);
+  --warning-light: rgba(245, 158, 11, 0.08);
+  --danger-light: rgba(239, 68, 68, 0.08);
+  --info-light: rgba(6, 182, 212, 0.08);
+  
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+}
+
+/* Global Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+  overflow: hidden; /* To'liq ekran uchun scrollbodyni yopamiz */
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Scrollbar dizayni */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: var(--radius-sm);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* ==========================================================================
+   TO'LIQ EKRANLI MAKET (FULL SCREEN APP LAYOUT)
+   ========================================================================== */
+.full-screen-app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   CHAP PANEL: SIDEBAR (HUDUDLAR DARAXTI)
+   ========================================================================== */
+.location-sidebar {
+  background-color: var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 300px;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: width var(--transition-normal), border-color var(--transition-normal), background-color var(--transition-normal);
+}
+
+.location-sidebar.collapsed {
+  width: 0;
+  border-right-width: 0;
+}
+
+.sidebar-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.sidebar-logo-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--accent);
+}
+
+.logo-text {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ==========================================================================
+   TUGMALAR USLUBLARI (GLOBAL BUTTONS DESIGN SYSTEM)
+   ========================================================================== */
+.btn {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.55rem 1.15rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-icon {
+  padding-left: 0.85rem;
+}
+
+.btn-svg,
+.btn svg {
+  width: 1.1rem !important;
+  height: 1.1rem !important;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.theme-sun-icon {
+  width: 1.1rem !important;
+  height: 1.1rem !important;
+  flex-shrink: 0;
+  transition: transform var(--transition-normal);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, var(--accent) 100%);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #818cf8 0%, var(--accent-hover) 100%);
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+}
+.btn-primary:active {
+  transform: translateY(0) scale(0.96);
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
+}
+
+.btn-secondary {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+.btn-secondary:hover {
+  background-color: var(--border-color);
+  border-color: var(--text-secondary);
+  transform: translateY(-1px);
+}
+.btn-secondary:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.btn-danger-outline {
+  background-color: rgba(239, 68, 68, 0.06);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+.btn-danger-outline:hover {
+  background-color: var(--danger);
+  color: #ffffff;
+  border-color: var(--danger);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
+}
+.btn-danger-outline:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.btn-accent-outline {
+  background-color: rgba(79, 70, 229, 0.06);
+  color: var(--accent);
+  border: 1px solid rgba(79, 70, 229, 0.3);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+.btn-accent-outline:hover {
+  background-color: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+}
+.btn-accent-outline:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.add-btn-small {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.add-btn-small:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background-color: var(--accent-light);
+  transform: translateY(-1px);
+}
+.add-btn-small:active {
+  transform: scale(0.92);
+}
+
+.add-btn-small svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Hududlar Daraxti Konteyneri */
+.location-tree-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Daraxt elementlari */
+.location-tree-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  user-select: none;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.location-tree-item:hover {
+  color: var(--text-primary);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.location-tree-item.active {
+  background-color: var(--accent-light);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tree-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.tree-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+/* Ierarxik Daraxt Indentatsiyalari va Akkordeon Mantig'i */
+.org-node {
+  margin-top: 0.5rem;
+}
+
+/* Yopiq tashkilotlarning qavatlarini yashiramiz */
+.org-node:not(.expanded-node) .floor-node {
+  display: none !important;
+}
+
+.org-item-row {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+}
+
+.floor-node {
+  margin-left: 1rem;
+  margin-top: 0.25rem;
+  border-left: 1px dashed var(--border-color);
+  padding-left: 0.5rem;
+}
+
+/* Yopiq qavatlarning xonalarini yashiramiz */
+.floor-node:not(.expanded-node) .room-node {
+  display: none !important;
+}
+
+.room-node {
+  margin-left: 1rem;
+  margin-top: 0.25rem;
+  border-left: 1px dashed var(--border-color);
+  padding-left: 0.5rem;
+}
+
+/* Chevron Ikonkasi uslublari */
+.chevron-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  transition: transform var(--transition-normal);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  margin-right: 0.25rem;
+}
+
+.location-tree-item:hover .chevron-icon {
+  color: var(--text-primary);
+}
+
+.org-node.expanded-node > .org-item-row .chevron-icon,
+.floor-node.expanded-node > .floor-item-row .chevron-icon {
+  transform: rotate(90deg);
+}
+
+/* Chap menyuda Hover tugmalari (Mikro-interaktiv) */
+.node-actions {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  position: absolute;
+  right: 0.5rem;
+  background: var(--bg-sidebar);
+  padding-left: 0.5rem;
+}
+
+.location-tree-item:hover .node-actions {
+  opacity: 1;
+}
+
+.action-icon-small {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-icon-small:hover {
+  color: var(--accent);
+  background-color: var(--border-color);
+}
+
+.action-icon-small.delete-node-btn:hover {
+  color: var(--danger);
+}
+
+.action-icon-small svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.sidebar-footer {
+  padding: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.sidebar-theme-btn {
+  width: 100%;
+}
+
+/* ==========================================================================
+   O'NG PANEL: MAHSULOTLAR VA WORKSPACE
+   ========================================================================== */
+.main-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Topbar Header */
+.workspace-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.01);
+}
+
+.header-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.breadcrumb-arrow {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.breadcrumb-item {
+  white-space: nowrap;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Dashboard va Statistika */
+.workspace-dashboard {
+  padding: 1.25rem 1.5rem 0.5rem 1.5rem;
+  flex-shrink: 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.stat-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+}
+
+.stat-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-md);
+}
+
+.stat-svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+/* Card Icons Colors */
+.total-assets { background-color: var(--accent-light); color: var(--accent); }
+.total-valuation { background-color: var(--info-light); color: var(--info); }
+.active-assets { background-color: var(--success-light); color: var(--success); }
+.repair-assets { background-color: var(--warning-light); color: var(--warning); }
+
+.stat-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.125rem;
+}
+
+/* Qidiruv va Filtrlar boshqaruv paneli */
+.workspace-controls {
+  padding: 0.75rem 1.5rem;
+  flex-shrink: 0;
+}
+
+.search-filter-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-box-wrapper {
+  position: relative;
+  flex: 2 1 250px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.search-box-wrapper input {
+  width: 100%;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 0.55rem 1rem 0.55rem 2.25rem;
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.search-box-wrapper input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.filter-wrapper {
+  flex: 1 1 150px;
+}
+
+.filter-wrapper select {
+  width: 100%;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-md);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%239ca3af' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.85rem;
+  padding-right: 2rem;
+}
+
+.filter-wrapper select:focus {
+  border-color: var(--accent);
+}
+
+/* Excel Drag & Drop (Minimalist banner) */
+.excel-drop-zone {
+  margin: 0.5rem 1.5rem;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--bg-card);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.excel-drop-zone.dragover {
+  border-color: var(--success);
+  background-color: var(--success-light);
+}
+
+.drop-zone-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.drop-zone-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Jadval maydoni (Table Container - Scrollable) */
+.workspace-table-container {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0.5rem 1.5rem 1.5rem 1.5rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.assets-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.assets-table th {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  user-select: none;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.assets-table th.sortable {
+  cursor: pointer;
+}
+.assets-table th.sortable:hover {
+  color: var(--text-primary);
+}
+
+.assets-table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.assets-table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.assets-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.01);
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 50px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.status-badge.ishlatilmoqda { background-color: var(--success-light); color: var(--success); }
+.status-badge.zaxirada { background-color: var(--info-light); color: var(--info); }
+.status-badge.tamirlashda { background-color: var(--warning-light); color: var(--warning); }
+.status-badge.hisobdan-chiqarilgan { background-color: var(--danger-light); color: var(--danger); }
+
+/* Amallar tugmalari xonasi */
+.actions-cell {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.no-data-message {
+  padding: 4rem 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.no-data-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--border-color);
+}
+
+/* ==========================================================================
+   MODAL OYNALAR (MODALS OVERLAYS & FORMS)
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.60);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+  padding: 1.5rem;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 650px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+  transform: scale(0.95);
+  transition: transform var(--transition-normal);
+}
+
+.modal-overlay.open .modal-card {
+  transform: scale(1);
+}
+
+.modal-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.close-btn:hover {
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.asset-form {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(90vh - 60px);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  padding: 1.5rem 1.75rem;
+  overflow-y: auto;
+}
+
+.modal-body {
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow-y: auto;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.form-group.full-width {
+  grid-column: span 2;
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+
+label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--accent);
+}
+
+.input-helper {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* ==========================================================================
+   STIKER PREVIEW CONTAINER & RENDER (40x30mm)
+   ========================================================================== */
+.qr-print-body {
+  padding: 1.5rem 1.75rem;
+}
+
+.sticker-border-container {
+  position: relative;
+  margin: 1.5rem auto;
+  width: 280px; /* Kattalashtirilgan ekrandagi preview o'lchami */
+  height: 210px; /* 4:3 format */
+  border: 1px dashed var(--accent);
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+}
+
+.sticker-dimensions-ruler-w {
+  position: absolute;
+  top: -1.5rem;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 0.65rem;
+  color: var(--accent);
+}
+.sticker-dimensions-ruler-w::before, .sticker-dimensions-ruler-w::after {
+  content: ''; position: absolute; bottom: -3px; width: 1px; height: 5px; background-color: var(--accent);
+}
+.sticker-dimensions-ruler-w::before { left: 0; }
+.sticker-dimensions-ruler-w::after { right: 0; }
+
+.sticker-dimensions-ruler-h {
+  position: absolute;
+  left: -2.25rem;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  font-size: 0.65rem;
+  color: var(--accent);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.sticker-dimensions-ruler-h::before, .sticker-dimensions-ruler-h::after {
+  content: ''; position: absolute; left: -3px; width: 5px; height: 1px; background-color: var(--accent);
+}
+.sticker-dimensions-ruler-h::before { top: 0; }
+.sticker-dimensions-ruler-h::after { bottom: 0; }
+
+/* STIKER ELEMENTI (Monoxrom termal dizayn) */
+.xprinter-sticker-element {
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  color: #000000;
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.sticker-qr-side {
+  width: 110px;
+  height: 110px;
+  flex: 0 0 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#stickerQrCanvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.sticker-info-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+  overflow: hidden;
+  height: 100%;
+}
+
+.sticker-header-org {
+  font-size: 6.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #444444;
+  margin-bottom: 2px;
+  border-bottom: 0.5px solid #000000;
+  padding-bottom: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sticker-inv-num {
+  font-size: 11px;
+  font-weight: 800;
+  color: #000000;
+  margin-bottom: 2px;
+}
+
+.sticker-asset-name {
+  font-size: 8px;
+  font-weight: 700;
+  color: #000000;
+  line-height: 1.1;
+  margin-bottom: 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sticker-owner,
+.sticker-location {
+  font-size: 6.8px;
+  font-weight: 500;
+  color: #222222;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Buttons and alerts tip */
+.print-config-tip {
+  background-color: var(--accent-light);
+  border-left: 3px solid var(--accent);
+  padding: 0.65rem;
+  font-size: 0.725rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+
+.print-config-tip ul { margin-left: 1.15rem; margin-top: 0.15rem; }
+
+/* Responsive moslashuvlar (mobil) */
+@media (max-width: 900px) {
+  .full-screen-app {
+    grid-template-columns: 1fr; /* Sidebar yashirinadi yoki pasayadi */
+  }
+  .location-sidebar {
+    display: none; /* Kichik ekranda sidebar yashirinadi */
+  }
+}
+
+/* ==========================================================================
+   CHOP ETISH UCHUN MAXSUS CSS (PRINT STYLE SHEET - XPRINTER 40x30mm)
+   ========================================================================== */
+@media print {
+  /* 1. Ekrandagi barcha narsani yashirish */
+  html, body, .full-screen-app, .location-sidebar, .main-workspace, .modal-overlay, .modal-card, header, section, footer {
+    visibility: hidden !important;
+    background: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* 2. 40x30mm sahifa formati */
+  @page {
+    size: 40mm 30mm;
+    margin: 0 !important;
+  }
+
+  /* 3. Stikerni to'liq ko'rsatish va 40x30mm o'lchamga o'tkazish */
+  #qrPrintModal,
+  .print-preview-card,
+  .qr-print-body,
+  .sticker-border-container,
+  #xprinterStickerElement,
+  #xprinterStickerElement * {
+    visibility: visible !important;
+  }
+
+  .modal-overlay {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 40mm !important;
+    height: 30mm !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    z-index: 9999 !important;
+    opacity: 1 !important;
+  }
+
+  .modal-card {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    width: 40mm !important;
+    height: 30mm !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    overflow: hidden !important;
+    transform: none !important;
+  }
+
+  .modal-header,
+  .print-instruction,
+  .print-config-tip,
+  .modal-footer,
+  .sticker-dimensions-ruler-w,
+  .sticker-dimensions-ruler-h {
+    display: none !important;
+  }
+
+  .qr-print-body {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 40mm !important;
+    height: 30mm !important;
+  }
+
+  .sticker-border-container {
+    border: none !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    width: 40mm !important;
+    height: 30mm !important;
+    padding: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    position: absolute !important;
+  }
+
+  /* 40x30mm HAQIQIY PRINTER O'LCHAMI */
+  #xprinterStickerElement {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 40mm !important;
+    height: 30mm !important;
+    padding: 1.5mm !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+  }
+
+  /* QR-kod printer o'lchami */
+  .sticker-qr-side {
+    width: 17mm !important;
+    height: 17mm !important;
+    flex: 0 0 17mm !important;
+  }
+
+  #stickerQrCanvas {
+    width: 17mm !important;
+    height: 17mm !important;
+    display: block !important;
+  }
+
+  /* Yozuvlar bo'limi */
+  .sticker-info-side {
+    flex: 1 1 auto !important;
+    padding-left: 1mm !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+
+  .sticker-header-org {
+    font-size: 4.8px !important;
+    margin-bottom: 0.4mm !important;
+    border-bottom: 0.2px solid #000000 !important;
+    padding-bottom: 0.2mm !important;
+  }
+
+  .sticker-inv-num {
+    font-size: 7.5px !important;
+    margin-bottom: 0.4mm !important;
+  }
+
+  .sticker-asset-name {
+    font-size: 5.8px !important;
+    line-height: 1.1 !important;
+    margin-bottom: 0.4mm !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .sticker-owner,
+  .sticker-location {
+    font-size: 4.5px !important;
+    line-height: 1.2 !important;
+  }
+}
+
+/* ==========================================================================
+   CLOUD CONFIGURATION STATUS & SOZLAMALAR USLUBLARI (NEW)
+   ========================================================================== */
+#cloudSettingsBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cloud-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: background-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+/* Oflayn rejim (Slate/grey) */
+.cloud-status-dot.offline {
+  background-color: var(--text-secondary);
+  box-shadow: none;
+}
+
+/* Onlayn rejim (Nafas oluvchi emerald yashil chiroq) */
+.cloud-status-dot.online {
+  background-color: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  animation: cloudPulseGreen 2s infinite;
+}
+
+@keyframes cloudPulseGreen {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Cloud form modal custom layout */
+.cloud-settings-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.cloud-settings-form ul {
+  padding-left: 1.15rem;
+  margin-top: 0.25rem;
+  font-size: 0.725rem;
+  color: var(--text-secondary);
+}
+
+.cloud-settings-form li {
+  margin-bottom: 0.15rem;
+}
+
+/* ==========================================================================
+   FIREBASE AUTHENTICATION & LOGIN SCREEN OVERLAY DESIGN
+   ========================================================================== */
+.auth-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(4, 6, 12, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+.auth-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.auth-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 420px;
+  padding: 2.25rem 2rem;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  transform: scale(0.95);
+  transition: transform var(--transition-normal);
+}
+
+.auth-overlay.open .auth-card {
+  transform: scale(1);
+}
+
+.auth-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.auth-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.auth-logo-text {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.auth-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.auth-toggle-link-wrapper {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.auth-toggle-btn-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  font-family: var(--font-body);
+  transition: color var(--transition-fast);
+}
+
+.auth-toggle-btn-link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* SIDEBAR USER PROFILE PANEL */
+.user-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.user-avatar-wrapper {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background-color: var(--accent-light);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.user-avatar-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.user-profile-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.user-email-label {
+  font-size: 0.725rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  margin-top: 0.125rem;
+  display: inline-block;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.logout-btn:hover {
+  color: var(--danger);
+  background-color: var(--danger-light);
+}
+
+.logout-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ==========================================================================
+   PRODUCTION READY STYLES (COMPLIANCE, FORGOT PASSWORD, USER MANAGEMENT)
+   ========================================================================== */
+.auth-toggle-btn-link:hover {
+  color: var(--accent) !important;
+  text-decoration: underline !important;
+}
+
+#adminUsersTableBody tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color var(--transition-fast);
+}
+
+#adminUsersTableBody tr:hover {
+  background-color: rgba(255, 255, 255, 0.01);
+}
+
+#adminUsersTableBody td {
+  padding: 0.75rem 1.0rem;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.admin-role-select {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.5rem;
+  font-size: 0.75rem;
+  outline: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: border-color var(--transition-fast);
+  width: 100%;
+}
+
+.admin-role-select:focus {
+  border-color: var(--accent);
+}
+
+.user-role-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.user-role-pill.admin {
+  background-color: rgba(124, 58, 237, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+}
+
+.user-role-pill.staff {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.user-role-pill.viewer {
+  background-color: rgba(156, 163, 175, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid rgba(156, 163, 175, 0.2);
+}
+
+.user-delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.user-delete-btn:hover {
+  color: var(--danger);
+  background-color: var(--danger-light);
+}
+
+#privacyModalBody p {
+  margin-bottom: 0.75rem;
+  color: var(--text-secondary);
+}
+
+#privacyModalBody h4 {
+  margin-top: 1rem;
+}
+
+/* ==========================================================================
+   LANDING PAGE & SPLIT SCREEN AUTH OVERLAYS
+   ========================================================================== */
+.auth-overlay {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: var(--bg-body) !important;
+  z-index: 10000 !important;
+  display: block !important; /* Cancel flexbox centering completely */
+  padding: 0 !important;      /* Wipes out the 1.5rem padding */
+  margin: 0 !important;
+  justify-content: initial !important;
+  align-items: initial !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+  overflow-y: auto;
+}
+
+.auth-overlay.open {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.landing-container {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  width: 100%;
+  min-height: 100vh;
+  background: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.04) 0%, transparent 40%),
+              radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.02) 0%, transparent 40%);
+}
+
+.landing-hero-section {
+  padding: 3.5rem 4.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  border-right: 1px solid var(--border-color);
+  background-color: rgba(255, 255, 255, 0.005);
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+.landing-auth-section {
+  padding: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.15);
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+.landing-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.landing-title {
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, var(--text-primary) 30%, rgba(255, 255, 255, 0.6) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.landing-subtitle {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  max-width: 620px;
+}
+
+.landing-screenshot-container {
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  background-color: var(--bg-card);
+  margin-bottom: 2.5rem;
+  transition: transform var(--transition-normal);
+  width: 100%;
+  max-width: 620px; /* Restricts huge sizes */
+}
+
+.landing-screenshot-container:hover {
+  transform: translateY(-4px);
+}
+
+.landing-screenshot {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.landing-features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-top: auto;
+}
+
+.landing-feature-card {
+  display: flex;
+  gap: 1rem;
+}
+
+.landing-feature-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-md);
+  background-color: rgba(124, 58, 237, 0.08);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(124, 58, 237, 0.15);
+}
+
+.landing-feature-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+  color: var(--text-primary);
+}
+
+.landing-feature-desc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* Responsive styles */
+@media (max-width: 1024px) {
+  .landing-container {
+    grid-template-columns: 1fr;
+  }
+  .landing-hero-section {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 3rem 2rem;
+    max-height: none;
+  }
+  .landing-auth-section {
+    padding: 3rem 2rem;
+    max-height: none;
+  }
+}
+
+
+
