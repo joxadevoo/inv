@@ -1361,8 +1361,8 @@ onMounted(() => {
       </div>
 
       <!-- Aktivlar jadvali -->
-      <div class="shared-table-wrapper" style="margin-top: 1.5rem; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background-color: var(--bg-card); box-shadow: var(--shadow-md);">
-        <table class="assets-table" style="min-width: 1300px; width: 100%;">
+      <div class="shared-table-wrapper">
+        <table class="assets-table" style="min-width: 1300px;">
           <thead>
             <tr>
               <th style="width: 120px;">Inventar №</th>

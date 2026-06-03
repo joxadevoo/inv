@@ -2407,48 +2407,47 @@ label {
 .shared-view-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
   height: 100vh;
   width: 100%;
   background-color: var(--bg-app);
-  padding: 2rem 1.5rem;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
+  padding: 0;
 }
 
 .shared-view-card {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  background-color: var(--bg-app);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   width: 100%;
-  max-width: 1600px;
-  padding: 2rem;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  margin: 0 auto;
+  padding: 0;
+  margin: 0;
 }
 
 .shared-view-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
+  flex-wrap: nowrap;
+  gap: 1.5rem;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 1.25rem;
-  margin-bottom: 1.25rem;
+  padding: 1.25rem 2rem;
+  background-color: var(--bg-card);
+  backdrop-filter: blur(8px);
 }
 
 .shared-logo {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   font-family: var(--font-heading);
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.15rem;
+  font-weight: 700;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .shared-logo svg {
@@ -2456,55 +2455,114 @@ label {
 }
 
 .shared-meta {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
-  background-color: var(--bg-input);
-  padding: 0.4rem 0.85rem;
+  background-color: rgba(255, 255, 255, 0.02);
+  padding: 0.35rem 0.75rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
+  white-space: nowrap;
 }
 
 .shared-progress-banner {
-  background-color: rgba(37, 99, 235, 0.04);
-  border: 1px solid rgba(37, 99, 235, 0.15);
-  border-radius: var(--radius-md);
-  padding: 1rem 1.25rem;
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.75rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .progress-info {
   display: flex;
   justify-content: space-between;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
 }
 
 .progress-info strong {
-  color: var(--text-primary);
+  color: var(--accent);
 }
 
 .progress-bar-track {
   width: 100%;
-  height: 6px;
+  height: 4px;
   background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background-color: var(--accent);
-  border-radius: 3px;
-  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%);
+  border-radius: 2px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shared-table-wrapper {
+  flex: 1;
+  width: 100%;
+  overflow: auto;
+  background-color: var(--bg-app);
+}
+
+.shared-table-wrapper .assets-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+  font-size: 0.82rem;
+}
+
+.shared-table-wrapper .assets-table th {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-card);
+  z-index: 10;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 0.85rem 1.25rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.shared-table-wrapper .assets-table td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+  background-color: rgba(255, 255, 255, 0.005);
+}
+
+.shared-table-wrapper .assets-table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.015);
 }
 
 .shared-view-footer {
   border-top: 1px solid var(--border-color);
-  margin-top: 1.5rem;
-  padding-top: 1.25rem;
-  text-align: center;
+  padding: 1.25rem 2rem;
+  background-color: var(--bg-card);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.shared-view-footer p {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 0;
+  text-align: left;
+}
+
+.shared-view-footer .btn-primary {
+  max-width: 320px;
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.85rem;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .btn-success {
@@ -2519,19 +2577,38 @@ label {
 
 /* Responsiveness for shared view */
 @media (max-width: 768px) {
-  .shared-view-container {
-    padding: 1rem 0.5rem;
-  }
-  .shared-view-card {
-    padding: 1.25rem 1rem;
-    border-radius: var(--radius-md);
-  }
   .shared-view-header {
-    flex-direction: column;
-    align-items: flex-start;
+    padding: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .shared-logo {
+    font-size: 1rem;
   }
   .shared-meta {
     width: 100%;
+    text-align: center;
+  }
+  .shared-progress-banner {
+    padding: 0.75rem 1rem;
+  }
+  .shared-table-wrapper .assets-table th {
+    padding: 0.75rem 1rem;
+  }
+  .shared-table-wrapper .assets-table td {
+    padding: 0.85rem 1rem;
+  }
+  .shared-view-footer {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+  .shared-view-footer p {
+    text-align: center;
+  }
+  .shared-view-footer .btn-primary {
+    max-width: 100%;
   }
 }
 
