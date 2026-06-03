@@ -43,6 +43,8 @@ const DEFAULT_ASSETS = [
   {
     id: "INV-26-0001",
     name: "MacBook Pro 16\" (M3 Max)",
+    model: "M3 Max 16GB",
+    sn: "SN-MBP998877",
     category: "Kompyuter va Texnika",
     status: "Ishlatilmoqda",
     org: "Bosh Ofis",
@@ -56,6 +58,8 @@ const DEFAULT_ASSETS = [
   {
     id: "INV-26-0002",
     name: "Epson L3250 Rangli Printer",
+    model: "L3250",
+    sn: "SN-EPSON223344",
     category: "Orgtexnika",
     status: "Ishlatilmoqda",
     org: "Bosh Ofis",
@@ -69,6 +73,8 @@ const DEFAULT_ASSETS = [
   {
     id: "INV-26-0003",
     name: "Ergonomik Ofis Kreslosi (Premium)",
+    model: "Premium Mesh",
+    sn: "SN-CHAIR8877",
     category: "Mebel va Jihozlar",
     status: "Ishlatilmoqda",
     org: "Bosh Ofis",
@@ -82,6 +88,8 @@ const DEFAULT_ASSETS = [
   {
     id: "INV-26-0004",
     name: "Hoffmann Konditsioner 18000 BTU",
+    model: "Hoffmann 18k",
+    sn: "SN-AC112233",
     category: "Konditsioner va Maishiy",
     status: "Zaxirada / Omborda",
     org: "Chilonzor Filiali",
@@ -150,6 +158,8 @@ const assetForm = reactive({
   originalId: "",
   id: "",
   name: "",
+  model: "",
+  sn: "",
   category: "Kompyuter va Texnika",
   status: "Ishlatilmoqda",
   org: "",
@@ -559,6 +569,8 @@ const openAddAssetModal = () => {
   // Joylashuvga qarab yangi inventar raqamini generatsiya qilish
   assetForm.id = generateInventoryId(assetForm.org, assetForm.floor, assetForm.room);
   
+  assetForm.model = "";
+  assetForm.sn = "";
   assetForm.owner = "";
   assetForm.price = null;
   assetForm.date = new Date().toISOString().split("T")[0];
@@ -574,6 +586,8 @@ const openEditAssetModal = (asset) => {
   assetForm.originalId = asset.id;
   assetForm.id = asset.id;
   assetForm.name = asset.name;
+  assetForm.model = asset.model || "";
+  assetForm.sn = asset.sn || "";
   assetForm.category = asset.category;
   assetForm.status = asset.status;
   assetForm.org = asset.org;
@@ -600,6 +614,8 @@ const saveAsset = () => {
   const newAsset = {
     id: assetForm.id.trim(),
     name: assetForm.name.trim(),
+    model: assetForm.model.trim(),
+    sn: assetForm.sn.trim(),
     category: assetForm.category,
     status: assetForm.status,
     org: assetForm.org,
@@ -734,6 +750,8 @@ const exportExcel = () => {
   const excelRows = listToExport.map(a => ({
     "Inventar Raqami": a.id,
     "Jihoz Nomi": a.name,
+    "Model": a.model || "",
+    "Serial Raqam (S/N)": a.sn || "",
     "Kategoriya": a.category,
     "Holati": a.status,
     "Tashkilot / Filial": a.org,
@@ -748,7 +766,7 @@ const exportExcel = () => {
   const ws = XLSX.utils.json_to_sheet(excelRows);
   
   ws["!cols"] = [
-    { wch: 18 }, { wch: 32 }, { wch: 22 }, { wch: 16 }, { wch: 22 },
+    { wch: 18 }, { wch: 32 }, { wch: 20 }, { wch: 20 }, { wch: 22 }, { wch: 16 }, { wch: 22 },
     { wch: 15 }, { wch: 22 }, { wch: 22 }, { wch: 26 }, { wch: 18 }, { wch: 38 }
   ];
 
@@ -874,6 +892,8 @@ const handleExcelImportFile = (file) => {
         if (!validStatuses.includes(status)) status = "Zaxirada / Omborda";
 
         const owner = row["Mas'ul Xodim"] || "";
+        const model = row["Model"] || row["Modeli"] || "";
+        const sn = row["Serial Raqam (S/N)"] || row["Serial Raqam"] || row["S/N"] || row["SN"] || "";
         let price = row["Sotib Olingan Narxi (UZS)"] || row["Narxi"] || 0;
         if (typeof price === "string") {
           price = Number(price.replace(/[^0-9]/g, "")) || 0;
@@ -887,6 +907,8 @@ const handleExcelImportFile = (file) => {
         importedAssets.push({
           id: id.toString().trim(),
           name: name.toString().trim(),
+          model: model.toString().trim(),
+          sn: sn.toString().trim(),
           category,
           status,
           org: orgName,
@@ -941,7 +963,7 @@ const openQrModal = (asset) => {
   nextTick(() => {
     const canvas = document.getElementById("stickerQrCanvas");
     if (canvas) {
-      const qrData = `AKTIV: ${asset.id}\nNOMI: ${asset.name}\nHUDUD: ${asset.org} -> ${asset.floor} -> ${asset.room}\nMAS'UL: ${asset.owner || "Yo'q"}\nHOLAT: ${asset.status}${asset.notes ? `\nIZOH: ${asset.notes}` : ''}`;
+      const qrData = `AKTIV: ${asset.id}\nNOMI: ${asset.name}\nHUDUD: ${asset.org} -> ${asset.floor} -> ${asset.room}${asset.model ? `\nMODEL: ${asset.model}` : ''}${asset.sn ? `\nS/N: ${asset.sn}` : ''}\nMAS'UL: ${asset.owner || "Yo'q"}\nHOLAT: ${asset.status}${asset.notes ? `\nIZOH: ${asset.notes}` : ''}`;
       QRCode.toCanvas(canvas, qrData, {
         width: 110,
         margin: 1,
@@ -1422,7 +1444,13 @@ onMounted(() => {
           <tbody>
             <tr v-for="asset in filteredAssets" :key="asset.id">
               <td style="font-weight: 600; color: var(--accent);">{{ asset.id }}</td>
-              <td style="font-weight: 500;">{{ asset.name }}</td>
+              <td style="font-weight: 500;">
+                {{ asset.name }}
+                <div v-if="asset.model || asset.sn" style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.15rem; font-weight: normal; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                  <span v-if="asset.model" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); padding: 0.05rem 0.25rem; border-radius: var(--radius-sm);">M: {{ asset.model }}</span>
+                  <span v-if="asset.sn" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); padding: 0.05rem 0.25rem; border-radius: var(--radius-sm);">S/N: {{ asset.sn }}</span>
+                </div>
+              </td>
               <td><span class="category-pill">{{ asset.category }}</span></td>
               <td>
                 <span class="status-pill" :class="asset.status === 'Ishlatilmoqda' ? 'active' : (asset.status === 'Ta\'mirlashda' ? 'repair' : 'reserve')">
@@ -1485,6 +1513,16 @@ onMounted(() => {
           <div class="form-group">
             <label for="formAssetName">Jihoz Nomi (Majburiy) *</label>
             <input type="text" id="formAssetName" v-model="assetForm.name" placeholder="HP LaserJet Printer..." required>
+          </div>
+
+          <div class="form-group">
+            <label for="formAssetModel">Jihoz Modeli</label>
+            <input type="text" id="formAssetModel" v-model="assetForm.model" placeholder="LaserJet 1020...">
+          </div>
+
+          <div class="form-group">
+            <label for="formAssetSn">Seriya Raqami (S/N)</label>
+            <input type="text" id="formAssetSn" v-model="assetForm.sn" placeholder="SN-123456...">
           </div>
 
           <div class="form-group">
