@@ -1023,7 +1023,7 @@ onMounted(() => {
 
         <!-- Dinamik tashkilotlar ierarxik daraxti (Vue nested structure) -->
         <div class="orgs-tree-wrapper" id="orgsTreeWrapper">
-          <div v-for="org in locations" :key="org.id" class="org-node" style="margin-bottom: 0.35rem;">
+          <div v-for="org in locations" :key="org.id" class="org-node" :class="{ 'expanded-node': expandedNodes.orgs[org.id] }" style="margin-bottom: 0.35rem;">
             <!-- Tashkilot (Filial) qatori -->
             <div class="location-tree-item org-item" :class="{ active: selectedLocation.type === 'ORG' && selectedLocation.org === org.name }" @click="selectLoc('ORG', org.name)">
               <span class="tree-toggle-arrow" @click.stop="toggleOrgCollapse(org.id)" style="margin-right: 4px; font-size: 0.65rem; color: var(--text-secondary); cursor: pointer;">
@@ -1036,7 +1036,7 @@ onMounted(() => {
             
             <!-- Qavatlar ro'yxati -->
             <div v-if="expandedNodes.orgs[org.id]" class="floors-wrapper" style="padding-left: 1.15rem; margin-top: 0.25rem;">
-              <div v-for="floor in org.floors" :key="floor.id" class="floor-node" style="margin-bottom: 0.25rem;">
+              <div v-for="floor in org.floors" :key="floor.id" class="floor-node" :class="{ 'expanded-node': expandedNodes.floors[floor.id] }" style="margin-bottom: 0.25rem;">
                 <div class="location-tree-item floor-item" :class="{ active: selectedLocation.type === 'FLOOR' && selectedLocation.org === org.name && selectedLocation.floor === floor.name }" @click="selectLoc('FLOOR', org.name, floor.name)">
                   <span class="tree-toggle-arrow" @click.stop="toggleFloorCollapse(floor.id)" style="margin-right: 4px; font-size: 0.6rem; color: var(--text-secondary); cursor: pointer;">
                     {{ expandedNodes.floors[floor.id] ? '▼' : '▶' }}
