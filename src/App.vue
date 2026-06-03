@@ -206,6 +206,74 @@ const availableRooms = computed(() => {
   return floor ? floor.rooms : [];
 });
 
+// Tashkilot nomi bosh harflari, qavat va xonaga qarab dinamik ID generatsiya qilish
+const generateInventoryId = (orgName, floorName, roomName) => {
+  if (!orgName) return "INV-0001";
+  
+  // 1. Tashkilot bosh harflari
+  const orgInitials = orgName
+    .split(/\s+/)
+    .map(w => w.charAt(0))
+    .join("")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+    
+  // 2. Qavat (raqamlar yoki bosh harflar)
+  let floorCode = floorName.replace(/[^0-9]/g, "");
+  if (!floorCode) {
+    floorCode = floorName.substring(0, 2).replace(/[^a-zA-Z]/g, "").toUpperCase();
+  }
+  if (!floorCode) floorCode = "0";
+  
+  // 3. Xona (raqamlar yoki bosh harflar)
+  let roomCode = roomName.replace(/[^0-9]/g, "");
+  if (!roomCode) {
+    roomCode = roomName
+      .split(/\s+/)
+      .map(w => w.charAt(0))
+      .join("")
+      .replace(/[^a-zA-Z]/g, "")
+      .substring(0, 3)
+      .toUpperCase();
+  }
+  if (!roomCode) {
+    roomCode = roomName.substring(0, 3).replace(/[^a-zA-Z]/g, "").toUpperCase();
+  }
+  if (!roomCode) roomCode = "RM";
+
+  // TGC-1-101- kabi prefix
+  const prefix = `${orgInitials}-${floorCode}-${roomCode}-`.replace(/-+/g, "-");
+
+  // Ushbu prefix bilan boshlanadigan joriy aktivlarni filtrlaymiz
+  const matchingAssets = assets.value.filter(a => a.id && a.id.startsWith(prefix));
+  
+  let nextSerial = 1;
+  if (matchingAssets.length > 0) {
+    const serials = matchingAssets.map(a => {
+      const parts = a.id.split("-");
+      const lastPart = parts[parts.length - 1];
+      const num = parseInt(lastPart, 10);
+      return isNaN(num) ? 0 : num;
+    });
+    nextSerial = Math.max(...serials) + 1;
+  }
+
+  // 4-xonali ketma-ket raqam (0001, 0002...)
+  const formattedSerial = String(nextSerial).padStart(4, "0");
+  
+  return prefix + formattedSerial;
+};
+
+// Joylashuvlar o'zgarganda yangi IDni avtomatik generatsiya qilish
+watch(
+  [() => assetForm.org, () => assetForm.floor, () => assetForm.room],
+  ([newOrg, newFloor, newRoom]) => {
+    if (assetForm.action === "ADD" && isAssetModalOpen.value) {
+      assetForm.id = generateInventoryId(newOrg, newFloor, newRoom);
+    }
+  }
+);
+
 watch(() => assetForm.org, (newOrg) => {
   if (newOrg) {
     const floors = availableFloors.value;
@@ -429,7 +497,6 @@ const openAddAssetModal = () => {
   if (currentUserRole.value === "viewer") return;
   assetForm.action = "ADD";
   assetForm.originalId = "";
-  assetForm.id = "INV-" + new Date().getFullYear().toString().slice(-2) + "-" + Math.floor(1000 + Math.random() * 9000);
   assetForm.name = "";
   assetForm.category = "Kompyuter va Texnika";
   assetForm.status = "Ishlatilmoqda";
@@ -438,6 +505,9 @@ const openAddAssetModal = () => {
   assetForm.org = selectedLocation.org || (locations.value[0] ? locations.value[0].name : "");
   assetForm.floor = selectedLocation.floor || (availableFloors.value[0] ? availableFloors.value[0].name : "");
   assetForm.room = selectedLocation.room || (availableRooms.value[0] ? availableRooms.value[0] : "");
+  
+  // Joylashuvga qarab yangi inventar raqamini generatsiya qilish
+  assetForm.id = generateInventoryId(assetForm.org, assetForm.floor, assetForm.room);
   
   assetForm.owner = "";
   assetForm.price = null;
