@@ -2406,13 +2406,15 @@ label {
 /* Ulashilgan ko'rinish (Shared View) */
 .shared-view-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   background-color: var(--bg-app);
   padding: 2rem 1.5rem;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .shared-view-card {
@@ -2421,10 +2423,11 @@ label {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   width: 100%;
-  max-width: 900px;
+  max-width: 1600px;
   padding: 2rem;
   display: flex;
   flex-direction: column;
+  margin: 0 auto;
 }
 
 .shared-view-header {

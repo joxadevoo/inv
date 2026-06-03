@@ -1361,14 +1361,19 @@ onMounted(() => {
       </div>
 
       <!-- Aktivlar jadvali -->
-      <div class="workspace-table-container" style="margin-top: 1.5rem; flex: 1; overflow-y: auto;">
-        <table class="assets-table">
+      <div class="shared-table-wrapper" style="margin-top: 1.5rem; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background-color: var(--bg-card); box-shadow: var(--shadow-md);">
+        <table class="assets-table" style="min-width: 1300px; width: 100%;">
           <thead>
             <tr>
-              <th style="width: 140px;">Inventar №</th>
-              <th>Jihoz Nomi</th>
+              <th style="width: 120px;">Inventar №</th>
+              <th style="width: 250px;">Jihoz Nomi</th>
+              <th style="width: 140px;">Kategoriya</th>
               <th style="width: 110px;">Holati</th>
-              <th style="width: 120px;">Mas'ul Xodim</th>
+              <th style="width: 160px;">Joylashuvi</th>
+              <th style="width: 140px;">Mas'ul Xodim</th>
+              <th style="width: 130px; text-align: right;">Narxi (UZS)</th>
+              <th style="width: 110px;">Sotib olingan</th>
+              <th style="width: 200px;">Izoh</th>
               <th style="width: 130px; text-align: center;">Mavjudligi</th>
             </tr>
           </thead>
@@ -1382,12 +1387,22 @@ onMounted(() => {
                   <span v-if="asset.sn" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); padding: 0.02rem 0.25rem; border-radius: var(--radius-sm);">S/N: {{ asset.sn }}</span>
                 </div>
               </td>
+              <td><span class="category-pill">{{ asset.category }}</span></td>
               <td>
                 <span class="status-pill" :class="asset.status === 'Ishlatilmoqda' ? 'active' : (asset.status === 'Ta\'mirlashda' ? 'repair' : 'reserve')">
                   {{ asset.status }}
                 </span>
               </td>
+              <td style="font-size: 0.78rem; color: var(--text-secondary);">
+                🏢 {{ asset.org }} <br>
+                <span style="font-size: 0.72rem; opacity: 0.8;">📶 {{ formatFloorDisplay(asset.floor) }} &rarr; 🚪 {{ asset.room }}</span>
+              </td>
               <td>{{ asset.owner }}</td>
+              <td style="font-family: monospace; font-weight: 600; text-align: right;">{{ new Intl.NumberFormat('uz-UZ').format(asset.price || 0) }} UZS</td>
+              <td>{{ asset.date || '—' }}</td>
+              <td style="font-size: 0.75rem; color: var(--text-secondary); max-width: 200px; white-space: normal; word-break: break-all;">
+                {{ asset.notes || '—' }}
+              </td>
               <td style="text-align: center;">
                 <button 
                   type="button"
@@ -1403,7 +1418,7 @@ onMounted(() => {
               </td>
             </tr>
             <tr v-if="sharedAssets.length === 0">
-              <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+              <td colspan="10" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
                 Ushbu joylashuvda hech qanday jihoz topilmadi.
               </td>
             </tr>
