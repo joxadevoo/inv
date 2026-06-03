@@ -229,6 +229,23 @@ const formatFloorDisplay = (floorName) => {
   return `${nameTrimmed} (F${code})`;
 };
 
+// Joylashuvlardagi aktivlar sonini hisoblash
+const getGlobalAssetCount = () => {
+  return assets.value.length;
+};
+
+const getOrgAssetCount = (orgName) => {
+  return assets.value.filter(a => a.org === orgName).length;
+};
+
+const getFloorAssetCount = (orgName, floorName) => {
+  return assets.value.filter(a => a.org === orgName && a.floor === floorName).length;
+};
+
+const getRoomAssetCount = (orgName, floorName, roomName) => {
+  return assets.value.filter(a => a.org === orgName && a.floor === floorName && a.room === roomName).length;
+};
+
 // Tashkilot nomi bosh harflari, qavat va xonaga qarab dinamik ID generatsiya qilish
 const generateInventoryId = (orgName, floorName, roomName) => {
   if (!orgName) return "INV-0001";
@@ -924,7 +941,7 @@ const openQrModal = (asset) => {
   nextTick(() => {
     const canvas = document.getElementById("stickerQrCanvas");
     if (canvas) {
-      const qrData = `AKTIV: ${asset.id}\nNOMI: ${asset.name}\nHUDUD: ${asset.org} -> ${asset.floor} -> ${asset.room}\nMAS'UL: ${asset.owner || "Yo'q"}\nHOLAT: ${asset.status}`;
+      const qrData = `AKTIV: ${asset.id}\nNOMI: ${asset.name}\nHUDUD: ${asset.org} -> ${asset.floor} -> ${asset.room}\nMAS'UL: ${asset.owner || "Yo'q"}\nHOLAT: ${asset.status}${asset.notes ? `\nIZOH: ${asset.notes}` : ''}`;
       QRCode.toCanvas(canvas, qrData, {
         width: 110,
         margin: 1,
@@ -1157,6 +1174,7 @@ onMounted(() => {
         <div class="location-tree-item global-item" :class="{ active: selectedLocation.type === 'GLOBAL' }" @click="selectLoc('GLOBAL')" id="globalLocationItem">
           <svg class="tree-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
           <span class="tree-text">Barcha Aktivlar</span>
+          <span class="tree-count-badge">{{ getGlobalAssetCount() }}</span>
         </div>
 
         <!-- Dinamik tashkilotlar ierarxik daraxti (Vue nested structure) -->
@@ -1169,6 +1187,7 @@ onMounted(() => {
               </span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" class="tree-icon" style="color: var(--accent);"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
               <span class="tree-text" style="font-weight: 600;">{{ org.name }}</span>
+              <span class="tree-count-badge">{{ getOrgAssetCount(org.name) }}</span>
               <button v-if="currentUserRole === 'admin'" @click.stop="openAddLocationModal('FLOOR', org.name)" class="add-sub-btn" title="Qavat qo'shish">+</button>
             </div>
             
@@ -1181,6 +1200,7 @@ onMounted(() => {
                   </span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" class="tree-icon" style="color: var(--success);"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                   <span class="tree-text">{{ formatFloorDisplay(floor.name) }}</span>
+                  <span class="tree-count-badge">{{ getFloorAssetCount(org.name, floor.name) }}</span>
                   <button v-if="currentUserRole === 'admin'" @click.stop="openAddLocationModal('ROOM', org.name, floor.name)" class="add-sub-btn" title="Xona qo'shish">+</button>
                 </div>
                 
@@ -1189,6 +1209,7 @@ onMounted(() => {
                   <div v-for="room in floor.rooms" :key="room" class="location-tree-item room-item" :class="{ active: selectedLocation.type === 'ROOM' && selectedLocation.org === org.name && selectedLocation.floor === floor.name && selectedLocation.room === room }" @click="selectLoc('ROOM', org.name, floor.name, room)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" class="tree-icon" style="color: var(--warning);"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
                     <span class="tree-text">{{ room }}</span>
+                    <span class="tree-count-badge">{{ getRoomAssetCount(org.name, floor.name, room) }}</span>
                   </div>
                 </div>
               </div>
