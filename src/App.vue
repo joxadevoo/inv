@@ -607,6 +607,69 @@ const formattedTotalValue = computed(() => {
   return new Intl.NumberFormat('uz-UZ').format(totalValue.value) + " UZS";
 });
 
+// Guruh amallari (Bulk actions) reaktiv holatlari va funksiyalari
+const selectedAssetIds = ref([]);
+
+const isAllSelected = computed(() => {
+  if (filteredAssets.value.length === 0) return false;
+  return filteredAssets.value.every(asset => selectedAssetIds.value.includes(asset.id));
+});
+
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    const filteredIds = filteredAssets.value.map(a => a.id);
+    selectedAssetIds.value = selectedAssetIds.value.filter(id => !filteredIds.includes(id));
+  } else {
+    filteredAssets.value.forEach(a => {
+      if (!selectedAssetIds.value.includes(a.id)) {
+        selectedAssetIds.value.push(a.id);
+      }
+    });
+  }
+};
+
+const bulkResetVerification = () => {
+  if (selectedAssetIds.value.length === 0) return;
+  if (!confirm(`Tanlangan ${selectedAssetIds.value.length} ta jihoz tasdiqlanishini bekor qilmoqchimisiz?`)) return;
+  
+  isAssetsLoading.value = true;
+  const updatePromises = selectedAssetIds.value.map(id => {
+    const asset = assets.value.find(a => a.id === id);
+    if (!asset) return Promise.resolve();
+    
+    const updatedAsset = {
+      ...asset,
+      verificationStatus: 'pending',
+      lastVerified: ''
+    };
+    
+    // Local state yangilash
+    const idx = assets.value.findIndex(a => a.id === id);
+    if (idx !== -1) {
+      assets.value[idx] = updatedAsset;
+    }
+    
+    if (isOnlineMode.value && db.value) {
+      return db.value.collection("assets").doc(id).set(updatedAsset);
+    }
+    return Promise.resolve();
+  });
+  
+  Promise.all(updatePromises)
+    .then(() => {
+      saveAssetsToLocal();
+      selectedAssetIds.value = [];
+      alert("Tanlangan jihozlar tasdiqlanishi muvaffaqiyatli bekor qilindi!");
+    })
+    .catch(err => {
+      console.error("Bulk reset error:", err);
+      alert("Xatolik yuz berdi: " + err.message);
+    })
+    .finally(() => {
+      isAssetsLoading.value = false;
+    });
+};
+
 // ==========================================================================
 // 7. INTERFEYS VA DIZAYN ELEMENTLARI (UI CONTROL FUNCTIONS)
 // ==========================================================================
@@ -1753,6 +1816,22 @@ onMounted(() => {
         <p class="drop-zone-text">Tiklash uchun <strong>Excel faylini sudrab tashlang</strong> yoki bosing.</p>
       </div>
 
+      <!-- GURUH AMALLARI BAR (BULK ACTIONS BAR) -->
+      <div v-if="selectedAssetIds.length > 0" class="bulk-actions-bar" style="margin: 0rem 1.5rem 1rem 1.5rem; padding: 0.75rem 1.25rem; background: rgba(37, 99, 235, 0.04); border: 1px solid var(--border-color); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 1rem; box-shadow: var(--shadow-sm);">
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 500;">
+          <span style="color: var(--accent); font-weight: 700;">✔️ {{ selectedAssetIds.length }}</span> ta jihoz tanlandi
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button @click="bulkResetVerification" class="btn btn-secondary btn-icon" style="padding: 0.4rem 0.85rem; font-size: 0.78rem; border-color: rgba(37, 99, 235, 0.25); background: rgba(37, 99, 235, 0.05); color: var(--accent);" title="Tanlangan jihozlar tasdiqlanishini bekor qilish">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M2.5 2v6h6M21.5 22v-6h-6"></path><path d="M22 11.5A10 10 0 0 0 3.2 7.2l-.7 2.8M2 12.5a10 10 0 0 0 18.8 4.3l.7-2.8"></path></svg>
+            <span style="font-weight: 600;">Tasdiqni bekor qilish</span>
+          </button>
+          <button @click="selectedAssetIds = []" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.78rem;" title="Tanlovni tozalash">
+            <span>Tanlovni tozalash</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Aktivlar jadvali -->
       <div class="workspace-table-container">
         <!-- Yuklanish animatsiyasi (Loading) -->
@@ -1764,6 +1843,9 @@ onMounted(() => {
         <table v-else class="assets-table" id="assetsTable">
           <thead>
             <tr>
+              <th style="width: 40px; text-align: center; padding: 0.85rem 0.75rem;">
+                <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" style="cursor: pointer; transform: scale(1.05);">
+              </th>
               <th @click="sortBy('id')" class="sortable" :class="{ sorted: currentSortColumn === 'id', desc: currentSortDirection === 'desc' }">Inventar №</th>
               <th @click="sortBy('name')" class="sortable" :class="{ sorted: currentSortColumn === 'name', desc: currentSortDirection === 'desc' }">Jihoz Nomi</th>
               <th @click="sortBy('category')" class="sortable" :class="{ sorted: currentSortColumn === 'category', desc: currentSortDirection === 'desc' }">Kategoriya</th>
@@ -1777,6 +1859,9 @@ onMounted(() => {
           </thead>
           <tbody>
             <tr v-for="asset in filteredAssets" :key="asset.id">
+              <td style="text-align: center; width: 40px; padding: 0.75rem 0.5rem;">
+                <input type="checkbox" :value="asset.id" v-model="selectedAssetIds" style="cursor: pointer; transform: scale(1.05);">
+              </td>
               <td style="font-weight: 600; color: var(--accent);">{{ asset.id }}</td>
               <td style="font-weight: 500;">
                 {{ asset.name }}
