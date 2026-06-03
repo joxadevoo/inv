@@ -227,6 +227,36 @@ const submitSharedVerification = () => {
     });
 };
 
+const resetAssetVerification = (asset) => {
+  if (!confirm(`"${asset.name}" jihozi tasdiqlanishini bekor qilmoqchimisiz?`)) return;
+  
+  const updatedAsset = {
+    ...asset,
+    verificationStatus: 'pending',
+    lastVerified: ''
+  };
+  
+  // Local state yangilash
+  const idx = assets.value.findIndex(a => a.id === asset.id);
+  if (idx !== -1) {
+    assets.value[idx] = updatedAsset;
+  }
+  
+  if (isOnlineMode.value && db.value) {
+    db.value.collection("assets").doc(asset.id).set(updatedAsset)
+      .then(() => {
+        saveAssetsToLocal();
+        alert("Tasdiqlash bekor qilindi!");
+      })
+      .catch(err => {
+        alert("Xatolik yuz berdi: " + err.message);
+      });
+  } else {
+    saveAssetsToLocal();
+    alert("Tasdiqlash bekor qilindi (Oflayn rejimi)!");
+  }
+};
+
 watch(assets, (newAssets) => {
   if (isSharedView.value && newAssets && newAssets.length > 0) {
     newAssets.forEach(a => {
@@ -1745,9 +1775,9 @@ onMounted(() => {
               </td>
               <td>
                 {{ asset.owner }}
-                <div v-if="asset.verificationStatus === 'confirmed'" style="font-size: 0.65rem; color: var(--success); margin-top: 0.15rem; font-weight: 600; display: flex; align-items: center; gap: 0.2rem;" title="Mas'ul tomonidan tasdiqlangan">
+                <div v-if="asset.verificationStatus === 'confirmed'" @click="resetAssetVerification(asset)" style="font-size: 0.65rem; color: var(--success); margin-top: 0.15rem; font-weight: 600; display: flex; align-items: center; gap: 0.2rem; cursor: pointer;" title="Bekor qilish uchun bosing">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="10" height="10"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Mavjud ({{ asset.lastVerified }})</span>
+                  <span>Mavjud ({{ asset.lastVerified }}) ✕</span>
                 </div>
               </td>
               <td style="font-family: monospace; font-weight: 600; text-align: right;">{{ new Intl.NumberFormat('uz-UZ').format(asset.price || 0) }} UZS</td>
