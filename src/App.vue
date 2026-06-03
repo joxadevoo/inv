@@ -206,6 +206,29 @@ const availableRooms = computed(() => {
   return floor ? floor.rooms : [];
 });
 
+// Qavat ko'rinishini formatlash: "1-qavat" -> "1-qavat (F1)"
+const formatFloorDisplay = (floorName) => {
+  if (!floorName) return "";
+  const nameTrimmed = floorName.toString().trim();
+  const nameUpper = nameTrimmed.toUpperCase();
+  
+  if (/\(F[0-9A-Z]+\)/i.test(nameTrimmed) || /^F[0-9A-Z]+$/i.test(nameTrimmed)) {
+    return nameTrimmed;
+  }
+  
+  const digits = nameTrimmed.replace(/[^0-9]/g, "");
+  if (digits) {
+    if (/^[0-9]+$/.test(nameTrimmed)) {
+      return `${nameTrimmed}-qavat (F${nameTrimmed})`;
+    }
+    return `${nameTrimmed} (F${digits})`;
+  }
+  
+  const initials = nameTrimmed.split(/\s+/).map(w => w.charAt(0)).join("").replace(/[^a-zA-Z]/g, "").toUpperCase();
+  const code = initials || nameTrimmed.substring(0, 1).toUpperCase();
+  return `${nameTrimmed} (F${code})`;
+};
+
 // Tashkilot nomi bosh harflari, qavat va xonaga qarab dinamik ID generatsiya qilish
 const generateInventoryId = (orgName, floorName, roomName) => {
   if (!orgName) return "INV-0001";
@@ -219,13 +242,20 @@ const generateInventoryId = (orgName, floorName, roomName) => {
     .toUpperCase();
     
   // 2. Qavat (F1, F2 va hokazo ko'rinishida)
-  let floorNum = floorName.replace(/[^0-9]/g, "");
   let floorCode = "";
-  if (floorNum) {
-    floorCode = "F" + floorNum;
+  const parenthesizedFCode = floorName.match(/\((F[0-9A-Z]+)\)/i);
+  if (parenthesizedFCode) {
+    floorCode = parenthesizedFCode[1].toUpperCase();
+  } else if (/^F[0-9A-Z]+$/i.test(floorName.trim())) {
+    floorCode = floorName.trim().toUpperCase();
   } else {
-    const initials = floorName.split(/\s+/).map(w => w.charAt(0)).join("").replace(/[^a-zA-Z]/g, "").toUpperCase();
-    floorCode = "F" + (initials || floorName.substring(0, 1).toUpperCase());
+    let floorNum = floorName.replace(/[^0-9]/g, "");
+    if (floorNum) {
+      floorCode = "F" + floorNum;
+    } else {
+      const initials = floorName.split(/\s+/).map(w => w.charAt(0)).join("").replace(/[^a-zA-Z]/g, "").toUpperCase();
+      floorCode = "F" + (initials || floorName.substring(0, 1).toUpperCase());
+    }
   }
   
   // 3. Xona (raqamlar yoki bosh harflar)
@@ -1150,7 +1180,7 @@ onMounted(() => {
                     {{ expandedNodes.floors[floor.id] ? '▼' : '▶' }}
                   </span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" class="tree-icon" style="color: var(--success);"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                  <span class="tree-text">{{ floor.name }}</span>
+                  <span class="tree-text">{{ formatFloorDisplay(floor.name) }}</span>
                   <button v-if="currentUserRole === 'admin'" @click.stop="openAddLocationModal('ROOM', org.name, floor.name)" class="add-sub-btn" title="Xona qo'shish">+</button>
                 </div>
                 
@@ -1221,7 +1251,7 @@ onMounted(() => {
 
           <template v-if="selectedLocation.type === 'FLOOR' || selectedLocation.type === 'ROOM'">
             <span class="breadcrumb-arrow">&rarr;</span>
-            <span class="breadcrumb-item" @click="selectLoc('FLOOR', selectedLocation.org, selectedLocation.floor)">{{ selectedLocation.floor }}</span>
+            <span class="breadcrumb-item" @click="selectLoc('FLOOR', selectedLocation.org, selectedLocation.floor)">{{ formatFloorDisplay(selectedLocation.floor) }}</span>
           </template>
 
           <template v-if="selectedLocation.type === 'ROOM'">
@@ -1380,7 +1410,7 @@ onMounted(() => {
               </td>
               <td style="font-size: 0.78rem; color: var(--text-secondary);">
                 🏢 {{ asset.org }} <br> 
-                <span style="font-size: 0.72rem; opacity: 0.8;">📶 {{ asset.floor }} &rarr; 🚪 {{ asset.room }}</span>
+                <span style="font-size: 0.72rem; opacity: 0.8;">📶 {{ formatFloorDisplay(asset.floor) }} &rarr; 🚪 {{ asset.room }}</span>
               </td>
               <td>{{ asset.owner }}</td>
               <td style="font-family: monospace; font-weight: 600; text-align: right;">{{ new Intl.NumberFormat('uz-UZ').format(asset.price || 0) }} UZS</td>
@@ -1468,7 +1498,7 @@ onMounted(() => {
           <div class="form-group">
             <label for="formAssetFloor">Qavat *</label>
             <select id="formAssetFloor" v-model="assetForm.floor" required>
-              <option v-for="floor in availableFloors" :key="floor.name" :value="floor.name">{{ floor.name }}</option>
+              <option v-for="floor in availableFloors" :key="floor.name" :value="floor.name">{{ formatFloorDisplay(floor.name) }}</option>
             </select>
           </div>
 
@@ -1493,11 +1523,11 @@ onMounted(() => {
             <label for="formAssetDate">Sotib Olingan Sana</label>
             <input type="date" id="formAssetDate" v-model="assetForm.date">
           </div>
-        </div>
 
-        <div class="form-group full-width" style="margin-top: 1rem;">
-          <label for="formAssetNotes">Izoh va Tafsilotlar</label>
-          <textarea id="formAssetNotes" v-model="assetForm.notes" placeholder="Jihoz holati yoki tafsilotlar..." rows="3"></textarea>
+          <div class="form-group full-width" style="margin-top: 0.5rem; padding-bottom: 0.5rem;">
+            <label for="formAssetNotes">Izoh va Tafsilotlar</label>
+            <textarea id="formAssetNotes" v-model="assetForm.notes" placeholder="Jihoz holati yoki tafsilotlar..." rows="3"></textarea>
+          </div>
         </div>
 
         <div class="modal-footer">
@@ -1602,7 +1632,7 @@ onMounted(() => {
               <div class="sticker-inv-num" id="stickerInvNum">{{ stickerAsset.id }}</div>
               <div class="sticker-asset-name" id="stickerAssetName">{{ stickerAsset.name }}</div>
               <div class="sticker-owner" id="stickerOwner">M: {{ stickerAsset.owner }}</div>
-              <div class="sticker-location" id="stickerLocation">Q: {{ stickerAsset.floor }} / X: {{ stickerAsset.room }}</div>
+              <div class="sticker-location" id="stickerLocation">Q: {{ formatFloorDisplay(stickerAsset.floor) }} / X: {{ stickerAsset.room }}</div>
             </div>
           </div>
         </div>
