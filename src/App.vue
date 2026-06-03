@@ -379,7 +379,7 @@ const saveAssetsToLocal = () => {
 
 const saveLocationsToLocal = () => {
   if (isOnlineMode.value && db.value) {
-    db.value.collection("locations").doc("tree").set({ data: locations.value })
+    db.value.collection("locations").doc("tree").set({ data: JSON.parse(JSON.stringify(locations.value)) })
       .catch(err => console.error("Firestore locations write error:", err));
   } else {
     localStorage.setItem("inv_locations", JSON.stringify(locations.value));
@@ -813,11 +813,6 @@ const setupAuth = () => {
             currentUserRole.value = doc.data().role || "viewer";
           } else {
             currentUserRole.value = "viewer";
-            db.value.collection("users").doc(user.uid).set({
-              uid: user.uid,
-              email: user.email,
-              role: "viewer"
-            });
           }
         }, err => {
           console.warn("User role sync error (falling back to viewer):", err);
