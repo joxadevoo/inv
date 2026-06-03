@@ -1065,6 +1065,24 @@ const exportExcel = () => {
       { wch: 15 }, { wch: 22 }, { wch: 22 }, { wch: 26 }, { wch: 18 }, { wch: 38 }
     ];
 
+    // Excel sheet chop etish sozlamalari (A4, Albom yo'nalishi, sahifaga sig'dirish)
+    ws["!pageSetup"] = {
+      orientation: "landscape",
+      paperSize: 9, // A4
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0
+    };
+    
+    ws["!margins"] = {
+      left: 0.25,
+      right: 0.25,
+      top: 0.5,
+      bottom: 0.5,
+      header: 0.3,
+      footer: 0.3
+    };
+
     // Excel sheet nomi 31 belgidan oshmasligi va maxsus belgilarni o'z ichiga olmasligi kerak: \ / ? * : [ ]
     let sheetName = roomName
       .replace(/[\\\/?\*:\[\]]/g, "_")
@@ -1091,6 +1109,14 @@ const exportExcel = () => {
   else if (selectedLocation.type === "ROOM") fileName = `Moddiy_Boyliklar_${selectedLocation.org}_${selectedLocation.room}`;
 
   XLSX.writeFile(wb, `${fileName}_${new Date().toISOString().split("T")[0]}.xlsx`);
+};
+
+const printTable = () => {
+  document.body.classList.add("printing-table");
+  nextTick(() => {
+    window.print();
+    document.body.classList.remove("printing-table");
+  });
 };
 
 const handleExcelImport = (e) => {
@@ -1748,6 +1774,11 @@ onMounted(() => {
 
             <!-- Tugmalar ro'yxati -->
             <div class="topbar-menu-items" :class="{ open: isTopbarMenuOpen }">
+              <button @click="printTable(); isTopbarMenuOpen = false" class="btn btn-secondary btn-icon" title="Hozirgi ro'yxatni printerda chop etish">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" width="16" height="16"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                <span>Chop Etish</span>
+              </button>
+              
               <button @click="exportExcel(); isTopbarMenuOpen = false" class="btn btn-secondary btn-icon" title="Hozirgi ko'rinishni Excelga yuklab olish">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 <span>Excelga Eksport</span>

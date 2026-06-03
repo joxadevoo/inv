@@ -1161,8 +1161,17 @@ label {
    CHOP ETISH UCHUN MAXSUS CSS (PRINT STYLE SHEET - XPRINTER 40x30mm)
    ========================================================================== */
 @media print {
-  /* 1. Ekrandagi barcha narsani yashirish */
-  html, body, .full-screen-app, .location-sidebar, .main-workspace, .modal-overlay, .modal-card, header, section, footer {
+  /* 1. Ekrandagi barcha narsani yashirish (Faqat sticker chop etilayotganda) */
+  body:not(.printing-table) html, 
+  body:not(.printing-table) body, 
+  body:not(.printing-table) .full-screen-app, 
+  body:not(.printing-table) .location-sidebar, 
+  body:not(.printing-table) .main-workspace, 
+  body:not(.printing-table) .modal-overlay, 
+  body:not(.printing-table) .modal-card, 
+  body:not(.printing-table) header, 
+  body:not(.printing-table) section, 
+  body:not(.printing-table) footer {
     visibility: hidden !important;
     background: none !important;
     background-color: transparent !important;
@@ -1173,11 +1182,17 @@ label {
     overflow: hidden !important;
   }
 
-  /* 2. 40x30mm sahifa formati */
-  @page {
+  /* 2. Sahifa formatlari */
+  @page sticker {
     size: 40mm 30mm;
     margin: 0 !important;
   }
+  @page tableReport {
+    size: A4 landscape;
+    margin: 10mm !important;
+  }
+
+  /* 3. Stikerni to'liq ko'rsatish va 40x30mm o'lchamga o'tkazish */
 
   /* 3. Stikerni to'liq ko'rsatish va 40x30mm o'lchamga o'tkazish */
   #qrPrintModal,
@@ -1190,6 +1205,7 @@ label {
   }
 
   .modal-overlay {
+    page: sticker !important;
     display: block !important;
     position: absolute !important;
     left: 0 !important;
@@ -1310,6 +1326,89 @@ label {
   .sticker-location {
     font-size: 4.5px !important;
     line-height: 1.2 !important;
+  }
+
+  /* Guruh / Jadval chop etish maxsus qoidalari */
+  body.printing-table {
+    page: tableReport !important;
+    visibility: visible !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: auto !important;
+  }
+
+  body.printing-table .full-screen-app,
+  body.printing-table .main-workspace,
+  body.printing-table .workspace-table-container,
+  body.printing-table .assets-table,
+  body.printing-table .assets-table * {
+    visibility: visible !important;
+  }
+
+  body.printing-table .location-sidebar,
+  body.printing-table .workspace-header,
+  body.printing-table .workspace-controls,
+  body.printing-table .excel-drop-zone,
+  body.printing-table .bulk-actions-bar,
+  body.printing-table .actions-col,
+  body.printing-table th:first-child, /* checkbox column */
+  body.printing-table td:first-child, /* checkbox column */
+  body.printing-table .print-qr-btn,
+  body.printing-table .edit-btn,
+  body.printing-table .delete-btn,
+  body.printing-table .sidebar-footer,
+  body.printing-table .no-data-message {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body.printing-table .full-screen-app {
+    display: block !important;
+    height: auto !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  body.printing-table .main-workspace {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.printing-table .workspace-table-container {
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  body.printing-table .assets-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 20px !important;
+  }
+
+  body.printing-table .assets-table th,
+  body.printing-table .assets-table td {
+    border: 1px solid #000000 !important;
+    padding: 6px 8px !important;
+    color: #000000 !important;
+    font-size: 8pt !important;
+    background: transparent !important;
+  }
+
+  body.printing-table .assets-table th {
+    background-color: #f2f2f2 !important;
+    font-weight: bold !important;
   }
 }
 
