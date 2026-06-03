@@ -138,6 +138,7 @@ const isAuthOverlayOpen = ref(false);
 const isForgotPasswordModalOpen = ref(false);
 const isPrivacyModalOpen = ref(false);
 const isAdminUsersModalOpen = ref(false);
+const isTopbarMenuOpen = ref(false);
 
 const privacyModalTitle = ref("Maxfiylik Siyosati");
 
@@ -676,7 +677,41 @@ const handleExcelImportFile = (file) => {
         return;
       }
 
-      const confirmRestore = confirm(`Exceldan jami ${rawRows.length} ta aktiv aniqlandi. Ular joriy ma'lumotlar bazangiz o'rniga yoziladi. Tasdiqlaysizmi?`);
+      // Fayl tarkibini tahlil qilib, foydalanuvchiga prevyu ko'rsatish
+      const summaryOrgs = {};
+      let totalValidAssets = 0;
+      rawRows.forEach(row => {
+        const id = row["Inventar Raqami"] || row["Inventar No"] || row["Inventar №"] || row["ID"];
+        const name = row["Jihoz Nomi"] || row["Nomi"] || row["Name"];
+        if (!id || !name) return;
+
+        totalValidAssets++;
+        const orgName = (row["Tashkilot / Filial"] || row["Tashkilot"] || row["Filial"] || "Bosh Ofis").toString().trim();
+        const floorName = (row["Qavat"] || row["Qavat Nomi"] || "1-qavat").toString().trim();
+
+        if (!summaryOrgs[orgName]) {
+          summaryOrgs[orgName] = new Set();
+        }
+        summaryOrgs[orgName].add(floorName);
+      });
+
+      if (totalValidAssets === 0) {
+        alert("Excel faylida yaroqli jihoz (Inventar ID va Nomi bor qatorlar) topilmadi!");
+        return;
+      }
+
+      let summaryText = `📥 Excel import qilishdan oldin ma'lumotlar prevyusi:\n\n`;
+      summaryText += `Jami aniqlangan jihozlar: ${totalValidAssets} ta.\n\n`;
+      summaryText += `Quyidagi hududlar ierarxiyasi yaratiladi:\n`;
+      
+      Object.keys(summaryOrgs).forEach(org => {
+        const floors = Array.from(summaryOrgs[org]).join(", ");
+        summaryText += `• ${org} ➔ [${floors}]\n`;
+      });
+
+      summaryText += `\nDiqqat: Ushbu ma'lumotlar joriy ma'lumotlar bazangiz o'rniga yoziladi. Tasdiqlaysizmi?`;
+
+      const confirmRestore = confirm(summaryText);
       if (!confirmRestore) return;
 
       const importedAssets = [];
@@ -1123,21 +1158,36 @@ onMounted(() => {
         </div>
         
         <div class="topbar-actions">
-          <!-- BULUT STATUSI (Faqat holat ko'rsatish uchun, bosganda sozlamalar chiqmaydi) -->
-          <div class="btn btn-secondary btn-icon" style="cursor: default; pointer-events: none;" title="Sinxronizatsiya holati">
+          <!-- BULUT STATUSI -->
+          <div class="btn btn-secondary btn-icon status-indicator-badge" style="cursor: default; pointer-events: none;" title="Sinxronizatsiya holati">
             <span class="cloud-status-dot" :class="isOnlineMode ? 'online' : 'offline'"></span>
-            <span>{{ isOnlineMode ? "Onlayn Sinxron" : "Oflayn Rejim" }}</span>
+            <span class="status-text">{{ isOnlineMode ? "Onlayn Sinxron" : "Oflayn Rejim" }}</span>
           </div>
 
-          <button @click="exportExcel" class="btn btn-secondary btn-icon" title="Hozirgi ko'rinishni Excelga yuklab olish">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Excelga Eksport
-          </button>
-          
-          <button v-if="currentUserRole === 'admin'" @click="$refs.excelFileInput.click()" class="btn btn-secondary btn-icon" title="Zaxira Excel faylidan tiklash">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-            Exceldan Import
-          </button>
+          <!-- MOBIL UCHUN COLLAPSE MENYU GROUP -->
+          <div class="topbar-menu-wrapper">
+            <!-- Mobil menyu ochish tugmasi (Uchta nuqta) -->
+            <button @click="isTopbarMenuOpen = !isTopbarMenuOpen" class="btn btn-secondary btn-icon menu-toggle-btn" title="Amallar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <circle cx="12" cy="12" r="1.5"></circle>
+                <circle cx="12" cy="5" r="1.5"></circle>
+                <circle cx="12" cy="19" r="1.5"></circle>
+              </svg>
+            </button>
+
+            <!-- Tugmalar ro'yxati -->
+            <div class="topbar-menu-items" :class="{ open: isTopbarMenuOpen }">
+              <button @click="exportExcel(); isTopbarMenuOpen = false" class="btn btn-secondary btn-icon" title="Hozirgi ko'rinishni Excelga yuklab olish">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Excelga Eksport</span>
+              </button>
+              
+              <button v-if="currentUserRole === 'admin'" @click="$refs.excelFileInput.click(); isTopbarMenuOpen = false" class="btn btn-secondary btn-icon" title="Zaxira Excel faylidan tiklash">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <span>Exceldan Import</span>
+              </button>
+            </div>
+          </div>
           <input type="file" ref="excelFileInput" @change="handleExcelImport" accept=".xlsx, .xls, .csv" style="display: none;">
         </div>
       </header>

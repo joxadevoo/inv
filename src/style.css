@@ -2196,5 +2196,75 @@ label {
   }
 }
 
+/* ----------------------------------------------------
+   MOBIL RESPONSIVE TOPBAR MENU & DROPDOWN
+   ---------------------------------------------------- */
+.status-indicator-badge {
+  cursor: default !important;
+  pointer-events: none;
+}
+
+.topbar-menu-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.menu-toggle-btn {
+  display: none !important;
+}
+
+.topbar-menu-items {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  /* Bulut statusining faqat rangli indicator nuqtasini qoldiramiz */
+  .status-indicator-badge {
+    padding: 0.5rem !important;
+    justify-content: center;
+    width: auto;
+    min-width: 0;
+  }
+  .status-indicator-badge .status-text {
+    display: none !important;
+  }
+
+  /* Mobil uchun 3-nuqta ochuvchi menyu tugmasini ko'rsatamiz */
+  .menu-toggle-btn {
+    display: flex !important;
+  }
+
+  /* Excel import/export tugmalarini dropdown qilamiz */
+  .topbar-menu-items {
+    display: none;
+    position: absolute;
+    top: calc(105% + 0.5rem);
+    right: 0;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    min-width: 180px;
+  }
+
+  /* Ochiq holatda ko'rsatish */
+  .topbar-menu-items.open {
+    display: flex;
+  }
+
+  /* Dropdown ichidagi tugmalar to'liq kenglikda */
+  .topbar-menu-items .btn {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 
 
