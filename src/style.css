@@ -2220,6 +2220,37 @@ label {
   align-items: center;
 }
 
+/* Katta ekranda (Desktop) ham topbar tugmalarini va statusni dumaloq doira qilish */
+@media (min-width: 769px) {
+  .status-indicator-badge {
+    padding: 0 !important;
+    justify-content: center;
+    align-items: center;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+  }
+  .status-indicator-badge .status-text {
+    display: none !important;
+  }
+
+  .topbar-menu-items .btn {
+    padding: 0 !important;
+    justify-content: center;
+    align-items: center;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+  }
+  .topbar-menu-items .btn span {
+    display: none !important;
+  }
+}
+
 @media (max-width: 768px) {
   /* Bulut statusining faqat rangli indicator nuqtasini qoldiramiz */
   /* Bulut statusining faqat rangli indicator nuqtasini qoldiramiz va doira shakliga keltiramiz */
