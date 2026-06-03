@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, shallowRef, reactive, computed, onMounted, watch, nextTick } from 'vue';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
@@ -100,8 +100,8 @@ const DEFAULT_ASSETS = [
 const assets = ref([]);
 const locations = ref([]);
 const isOnlineMode = ref(false);
-const db = ref(null);
-const currentUser = ref(null);
+const db = shallowRef(null);
+const currentUser = shallowRef(null);
 const currentUserRole = ref("admin");
 
 // Sidebar va Mavzu holatlari
