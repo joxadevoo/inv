@@ -111,6 +111,7 @@ const isOnlineMode = ref(false);
 const db = shallowRef(null);
 const currentUser = shallowRef(null);
 const currentUserRole = ref("admin");
+const isAssetsLoading = ref(false);
 
 // Sidebar va Mavzu holatlari
 const theme = ref("dark");
@@ -357,6 +358,18 @@ watch(() => assetForm.floor, (newFloor) => {
   }
 });
 
+const isTechCategory = computed(() => {
+  const techCategories = ["Kompyuter va Texnika", "Orgtexnika", "Konditsioner va Maishiy"];
+  return techCategories.includes(assetForm.category);
+});
+
+watch(() => assetForm.category, (newCategory) => {
+  if (!isTechCategory.value) {
+    assetForm.model = "";
+    assetForm.sn = "";
+  }
+});
+
 // ==========================================================================
 // 6. TIZIMDA MA'LUMOTLARNI HISOB-KITOB QILISH (COMPUTED DATA)
 // ==========================================================================
@@ -490,6 +503,16 @@ const ensureLocationsStructureAndIds = (data) => {
 };
 
 const loadDatabase = () => {
+  isAssetsLoading.value = true;
+  let locationsLoaded = false;
+  let assetsLoaded = false;
+
+  const checkLoadingState = () => {
+    if (locationsLoaded && assetsLoaded) {
+      isAssetsLoading.value = false;
+    }
+  };
+
   if (isOnlineMode.value && db.value) {
     // 1. Joylashuvlarni onlayn yuklaymiz
     db.value.collection("locations").doc("tree").onSnapshot((doc) => {
@@ -499,7 +522,13 @@ const loadDatabase = () => {
         locations.value = [...DEFAULT_LOCATIONS];
         db.value.collection("locations").doc("tree").set({ data: DEFAULT_LOCATIONS });
       }
-    }, err => console.error("Firestore locations sync error:", err));
+      locationsLoaded = true;
+      checkLoadingState();
+    }, err => {
+      console.error("Firestore locations sync error:", err);
+      locationsLoaded = true;
+      checkLoadingState();
+    });
 
     // 2. Aktivlarni onlayn tinglaymiz
     if (unsubscribeAssets) unsubscribeAssets();
@@ -507,7 +536,13 @@ const loadDatabase = () => {
       const list = [];
       snapshot.forEach(doc => list.push(doc.data()));
       assets.value = list;
-    }, err => console.error("Firestore assets sync error:", err));
+      assetsLoaded = true;
+      checkLoadingState();
+    }, err => {
+      console.error("Firestore assets sync error:", err);
+      assetsLoaded = true;
+      checkLoadingState();
+    });
   } else {
     // Oflayn LocalStorage rejimi:
     const localLocs = localStorage.getItem("inv_locations");
@@ -531,6 +566,10 @@ const loadDatabase = () => {
       assets.value = [...DEFAULT_ASSETS];
       localStorage.setItem("inv_assets", JSON.stringify(assets.value));
     }
+    
+    setTimeout(() => {
+      isAssetsLoading.value = false;
+    }, 300);
   }
 };
 
@@ -1427,7 +1466,13 @@ onMounted(() => {
 
       <!-- Aktivlar jadvali -->
       <div class="workspace-table-container">
-        <table class="assets-table" id="assetsTable">
+        <!-- Yuklanish animatsiyasi (Loading) -->
+        <div v-if="isAssetsLoading" class="table-loader-container">
+          <div class="spinner"></div>
+          <p class="loader-text">Ma'lumotlar yuklanmoqda...</p>
+        </div>
+
+        <table v-else class="assets-table" id="assetsTable">
           <thead>
             <tr>
               <th @click="sortBy('id')" class="sortable" :class="{ sorted: currentSortColumn === 'id', desc: currentSortDirection === 'desc' }">Inventar №</th>
@@ -1515,12 +1560,12 @@ onMounted(() => {
             <input type="text" id="formAssetName" v-model="assetForm.name" placeholder="HP LaserJet Printer..." required>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" v-if="isTechCategory">
             <label for="formAssetModel">Jihoz Modeli</label>
             <input type="text" id="formAssetModel" v-model="assetForm.model" placeholder="LaserJet 1020...">
           </div>
 
-          <div class="form-group">
+          <div class="form-group" v-if="isTechCategory">
             <label for="formAssetSn">Seriya Raqami (S/N)</label>
             <input type="text" id="formAssetSn" v-model="assetForm.sn" placeholder="SN-123456...">
           </div>
