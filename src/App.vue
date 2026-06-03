@@ -309,6 +309,22 @@ const selectLoc = (type, org = "", floor = "", room = "") => {
   selectedLocation.org = org;
   selectedLocation.floor = floor;
   selectedLocation.room = room;
+
+  // Tashkilot yoki qavat bosilganda avtomatik ravishda uni yoyib ko'rsatish (expand)
+  if (type === "ORG") {
+    const orgObj = locations.value.find(o => o.name === org);
+    if (orgObj) {
+      expandedNodes.orgs[orgObj.id] = true;
+    }
+  } else if (type === "FLOOR") {
+    const orgObj = locations.value.find(o => o.name === org);
+    if (orgObj) {
+      const floorObj = orgObj.floors.find(f => f.name === floor);
+      if (floorObj) {
+        expandedNodes.floors[floorObj.id] = true;
+      }
+    }
+  }
 };
 
 const toggleOrgCollapse = (orgId) => {
@@ -531,6 +547,7 @@ const saveLocation = () => {
   } else if (locationForm.type === "FLOOR") {
     const org = locations.value.find(o => o.name === locationForm.parentOrg);
     if (!org) return;
+    if (!org.floors) org.floors = [];
     const exists = org.floors.some(f => f.name.toLowerCase() === name.toLowerCase());
     if (exists) { return alert("Ushby qavat allaqachon mavjud!"); }
     
@@ -539,15 +556,23 @@ const saveLocation = () => {
       name: name,
       rooms: []
     });
+    
+    // Yangi qavat qo'shilganda tashkilot panelini avtomatik yoyib ko'rsatish
+    expandedNodes.orgs[org.id] = true;
   } else if (locationForm.type === "ROOM") {
     const org = locations.value.find(o => o.name === locationForm.parentOrg);
     if (!org) return;
+    if (!org.floors) org.floors = [];
     const floor = org.floors.find(f => f.name === locationForm.parentFloor);
     if (!floor) return;
+    if (!floor.rooms) floor.rooms = [];
     const exists = floor.rooms.some(r => r.toLowerCase() === name.toLowerCase());
     if (exists) { return alert("Ushbu xona allaqachon mavjud!"); }
 
     floor.rooms.push(name);
+    
+    // Yangi xona qo'shilganda qavat panelini avtomatik yoyib ko'rsatish
+    expandedNodes.floors[floor.id] = true;
   }
 
   saveLocationsToLocal();
