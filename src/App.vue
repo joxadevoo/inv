@@ -218,12 +218,15 @@ const generateInventoryId = (orgName, floorName, roomName) => {
     .replace(/[^a-zA-Z0-9]/g, "")
     .toUpperCase();
     
-  // 2. Qavat (raqamlar yoki bosh harflar)
-  let floorCode = floorName.replace(/[^0-9]/g, "");
-  if (!floorCode) {
-    floorCode = floorName.substring(0, 2).replace(/[^a-zA-Z]/g, "").toUpperCase();
+  // 2. Qavat (F1, F2 va hokazo ko'rinishida)
+  let floorNum = floorName.replace(/[^0-9]/g, "");
+  let floorCode = "";
+  if (floorNum) {
+    floorCode = "F" + floorNum;
+  } else {
+    const initials = floorName.split(/\s+/).map(w => w.charAt(0)).join("").replace(/[^a-zA-Z]/g, "").toUpperCase();
+    floorCode = "F" + (initials || floorName.substring(0, 1).toUpperCase());
   }
-  if (!floorCode) floorCode = "0";
   
   // 3. Xona (raqamlar yoki bosh harflar)
   let roomCode = roomName.replace(/[^0-9]/g, "");
