@@ -347,12 +347,25 @@ const sortBy = (col) => {
 // ==========================================================================
 // 8. MA'LUMOTLAR BAZASI BILAN ISHLASH (CRUD OPERATIONS)
 // ==========================================================================
+const ensureLocationsStructureAndIds = (data) => {
+  if (!Array.isArray(data)) return [];
+  data.forEach(org => {
+    if (!org.id) org.id = "org_" + Math.random().toString(36).substr(2, 9);
+    if (!org.floors) org.floors = [];
+    org.floors.forEach(floor => {
+      if (!floor.id) floor.id = "floor_" + Math.random().toString(36).substr(2, 9);
+      if (!floor.rooms) floor.rooms = [];
+    });
+  });
+  return data;
+};
+
 const loadDatabase = () => {
   if (isOnlineMode.value && db.value) {
     // 1. Joylashuvlarni onlayn yuklaymiz
     db.value.collection("locations").doc("tree").onSnapshot((doc) => {
       if (doc.exists) {
-        locations.value = doc.data().data || [];
+        locations.value = ensureLocationsStructureAndIds(doc.data().data || []);
       } else {
         locations.value = [...DEFAULT_LOCATIONS];
         db.value.collection("locations").doc("tree").set({ data: DEFAULT_LOCATIONS });
@@ -372,7 +385,12 @@ const loadDatabase = () => {
     const localAssets = localStorage.getItem("inv_assets");
 
     if (localLocs) {
-      try { locations.value = JSON.parse(localLocs) || []; } catch(e) { locations.value = [...DEFAULT_LOCATIONS]; }
+      try {
+        const raw = JSON.parse(localLocs) || [];
+        locations.value = ensureLocationsStructureAndIds(raw);
+      } catch(e) {
+        locations.value = [...DEFAULT_LOCATIONS];
+      }
     } else {
       locations.value = [...DEFAULT_LOCATIONS];
       localStorage.setItem("inv_locations", JSON.stringify(locations.value));
@@ -396,7 +414,10 @@ const saveAssetsToLocal = () => {
 const saveLocationsToLocal = () => {
   if (isOnlineMode.value && db.value) {
     db.value.collection("locations").doc("tree").set({ data: JSON.parse(JSON.stringify(locations.value)) })
-      .catch(err => console.error("Firestore locations write error:", err));
+      .catch(err => {
+        console.error("Firestore locations write error:", err);
+        alert("Xatolik: Joylashuvlarni saqlab bo'lmadi! Ruxsat yetarli emas yoki tarmoq xatosi. Batafsil: " + err.message);
+      });
   } else {
     localStorage.setItem("inv_locations", JSON.stringify(locations.value));
   }
