@@ -176,14 +176,36 @@ const toggleAssetVerification = (asset) => {
 };
 
 const sharedAssets = computed(() => {
-  return assets.value.filter(a => {
+  const filtered = assets.value.filter(a => {
     if (sharedLocation.type === "GLOBAL") return true;
     if (sharedLocation.type === "ORG") return a.org === sharedLocation.org;
     if (sharedLocation.type === "FLOOR") return a.org === sharedLocation.org && a.floor === sharedLocation.floor;
     if (sharedLocation.type === "ROOM") return a.org === sharedLocation.org && a.floor === sharedLocation.floor && a.room === sharedLocation.room;
     return false;
   });
+  
+  // Joylashuv bo'yicha guruhlash uchun saralash
+  return [...filtered].sort((a, b) => {
+    const orgCompare = (a.org || "").localeCompare(b.org || "");
+    if (orgCompare !== 0) return orgCompare;
+    
+    const floorCompare = (a.floor || "").localeCompare(b.floor || "");
+    if (floorCompare !== 0) return floorCompare;
+    
+    const roomCompare = (a.room || "").localeCompare(b.room || "");
+    if (roomCompare !== 0) return roomCompare;
+    
+    return a.id.localeCompare(b.id);
+  });
 });
+
+const isRoomSeparatorAfter = (index) => {
+  if (index === sharedAssets.value.length - 1) return false;
+  const current = sharedAssets.value[index];
+  const next = sharedAssets.value[index + 1];
+  // Xona, qavat yoki tashkilot o'zgarganda uzuk chiziqli ajratgich qo'yiladi
+  return current.room !== next.room || current.floor !== next.floor || current.org !== next.org;
+};
 
 const sharedVerifiedCount = computed(() => {
   return sharedAssets.value.filter(a => verifiedAssets.value.has(a.id)).length;
@@ -1408,7 +1430,7 @@ onMounted(() => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="asset in sharedAssets" :key="asset.id">
+            <tr v-for="(asset, index) in sharedAssets" :key="asset.id" :class="{ 'room-separator-row': isRoomSeparatorAfter(index) }">
               <td style="font-weight: 600; color: var(--accent);">{{ asset.id }}</td>
               <td>
                 <div style="font-weight: 500;">{{ asset.name }}</div>

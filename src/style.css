@@ -2539,6 +2539,14 @@ label {
   background-color: rgba(255, 255, 255, 0.015);
 }
 
+.room-separator-row td {
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="light"] .room-separator-row td {
+  border-bottom: 2px dashed rgba(0, 0, 0, 0.08) !important;
+}
+
 .shared-view-footer {
   border-top: 1px solid var(--border-color);
   padding: 1.25rem 2rem;
