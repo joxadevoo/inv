@@ -1025,31 +1025,65 @@ const exportExcel = () => {
     return;
   }
 
-  const excelRows = listToExport.map(a => ({
-    "Inventar Raqami": a.id,
-    "Jihoz Nomi": a.name,
-    "Model": a.model || "",
-    "Serial Raqam (S/N)": a.sn || "",
-    "Kategoriya": a.category,
-    "Holati": a.status,
-    "Tashkilot / Filial": a.org,
-    "Qavat": a.floor,
-    "Joylashgan Xonasi": a.room,
-    "Mas'ul Xodim": a.owner || "",
-    "Sotib Olingan Narxi (UZS)": a.price || 0,
-    "Sotib Olingan Sana": a.date || "",
-    "Izoh va Tafsilotlar": a.notes || ""
-  }));
-
-  const ws = XLSX.utils.json_to_sheet(excelRows);
-  
-  ws["!cols"] = [
-    { wch: 18 }, { wch: 32 }, { wch: 20 }, { wch: 20 }, { wch: 22 }, { wch: 16 }, { wch: 22 },
-    { wch: 15 }, { wch: 22 }, { wch: 22 }, { wch: 26 }, { wch: 18 }, { wch: 38 }
-  ];
+  // Jihozlarni xonalar bo'yicha guruhlash
+  const assetsByRoom = {};
+  listToExport.forEach(a => {
+    const roomName = (a.room || "Xonasiz").trim();
+    if (!assetsByRoom[roomName]) {
+      assetsByRoom[roomName] = [];
+    }
+    assetsByRoom[roomName].push(a);
+  });
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Moddiy Boyliklar");
+  const addedSheetNames = new Set();
+
+  // Har bir xona uchun alohida sheet yaratish
+  Object.keys(assetsByRoom).sort().forEach(roomName => {
+    const roomAssets = assetsByRoom[roomName];
+    const excelRows = roomAssets.map(a => ({
+      "Inventar Raqami": a.id,
+      "Jihoz Nomi": a.name,
+      "Model": a.model || "",
+      "Serial Raqam (S/N)": a.sn || "",
+      "Kategoriya": a.category,
+      "Holati": a.status,
+      "Tashkilot / Filial": a.org,
+      "Qavat": a.floor,
+      "Joylashgan Xonasi": a.room || "Xonasiz",
+      "Mas'ul Xodim": a.owner || "",
+      "Sotib Olingan Narxi (UZS)": a.price || 0,
+      "Sotib Olingan Sana": a.date || "",
+      "Izoh va Tafsilotlar": a.notes || ""
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(excelRows);
+    
+    // Ustun kengliklari
+    ws["!cols"] = [
+      { wch: 18 }, { wch: 32 }, { wch: 20 }, { wch: 20 }, { wch: 22 }, { wch: 16 }, { wch: 22 },
+      { wch: 15 }, { wch: 22 }, { wch: 22 }, { wch: 26 }, { wch: 18 }, { wch: 38 }
+    ];
+
+    // Excel sheet nomi 31 belgidan oshmasligi va maxsus belgilarni o'z ichiga olmasligi kerak: \ / ? * : [ ]
+    let sheetName = roomName
+      .replace(/[\\\/?\*:\[\]]/g, "_")
+      .substring(0, 31);
+
+    if (!sheetName) sheetName = "Xona";
+
+    // Bir xil nomli sheetlar takrorlanishining oldini olish
+    let finalSheetName = sheetName;
+    let counter = 1;
+    while (addedSheetNames.has(finalSheetName.toLowerCase())) {
+      const suffix = ` (${counter})`;
+      finalSheetName = sheetName.substring(0, 31 - suffix.length) + suffix;
+      counter++;
+    }
+    addedSheetNames.add(finalSheetName.toLowerCase());
+
+    XLSX.utils.book_append_sheet(wb, ws, finalSheetName);
+  });
 
   let fileName = "Moddiy_Boyliklar_Barchasi";
   if (selectedLocation.type === "ORG") fileName = `Moddiy_Boyliklar_${selectedLocation.org}`;
