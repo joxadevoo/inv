@@ -102,7 +102,7 @@ const locations = ref([]);
 const isOnlineMode = ref(false);
 const db = ref(null);
 const currentUser = ref(null);
-const currentUserRole = ref("viewer");
+const currentUserRole = ref("admin");
 
 // Sidebar va Mavzu holatlari
 const theme = ref("dark");
@@ -810,17 +810,17 @@ const setupAuth = () => {
         
         db.value.collection("users").doc(user.uid).onSnapshot((doc) => {
           if (doc.exists) {
-            currentUserRole.value = doc.data().role || "viewer";
+            currentUserRole.value = doc.data().role || "admin";
           } else {
-            currentUserRole.value = "viewer";
+            currentUserRole.value = "admin";
           }
         }, err => {
-          console.warn("User role sync error (falling back to viewer):", err);
-          currentUserRole.value = "viewer";
+          console.warn("User role sync error (falling back to admin):", err);
+          currentUserRole.value = "admin";
         });
       } else {
         currentUser.value = null;
-        currentUserRole.value = "viewer";
+        currentUserRole.value = "admin";
         isAuthOverlayOpen.value = true;
       }
     });
@@ -846,15 +846,11 @@ const submitAuth = () => {
     
     firebase.auth().createUserWithEmailAndPassword(email, password)
       .then((cred) => {
-        db.value.collection("users").get()
-          .then(snapshot => {
-            const role = snapshot.empty ? "admin" : "staff";
-            db.value.collection("users").doc(cred.user.uid).set({
-              uid: cred.user.uid,
-              email: cred.user.email,
-              role: role
-            }).then(() => alert(`Muvaffaqiyatli ro'yxatdan o'tdingiz!\nRolingiz: ${role.toUpperCase()}`));
-          });
+        db.value.collection("users").doc(cred.user.uid).set({
+          uid: cred.user.uid,
+          email: cred.user.email,
+          role: "admin"
+        }).then(() => alert(`Muvaffaqiyatli ro'yxatdan o'tdingiz!\nRolingiz: ADMIN`));
       })
       .catch(err => alert("Ro'yxatdan o'tishda xatolik: " + err.message));
   }
