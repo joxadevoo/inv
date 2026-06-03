@@ -113,6 +113,130 @@ const currentUser = shallowRef(null);
 const currentUserRole = ref("admin");
 const isAssetsLoading = ref(false);
 
+// Ulashish (Share View) holatlari va funksiyalari
+const isSharedView = ref(false);
+const sharedLocation = reactive({
+  type: "GLOBAL",
+  org: "",
+  floor: "",
+  room: ""
+});
+const verifiedAssets = ref(new Set());
+
+const parseShareUrl = () => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("share") === "true") {
+    isSharedView.value = true;
+    sharedLocation.type = params.get("type") || "GLOBAL";
+    sharedLocation.org = params.get("org") || "";
+    sharedLocation.floor = params.get("floor") || "";
+    sharedLocation.room = params.get("room") || "";
+    
+    // selectedLocation ga nusxalash
+    selectedLocation.type = sharedLocation.type;
+    selectedLocation.org = sharedLocation.org;
+    selectedLocation.floor = sharedLocation.floor;
+    selectedLocation.room = sharedLocation.room;
+  }
+};
+
+const generateShareLink = () => {
+  const origin = window.location.origin + window.location.pathname;
+  const params = new URLSearchParams();
+  params.set("share", "true");
+  if (selectedLocation.org) params.set("org", selectedLocation.org);
+  if (selectedLocation.floor) params.set("floor", selectedLocation.floor);
+  if (selectedLocation.room) params.set("room", selectedLocation.room);
+  params.set("type", selectedLocation.type);
+  return `${origin}?${params.toString()}`;
+};
+
+const copyShareLink = () => {
+  const link = generateShareLink();
+  navigator.clipboard.writeText(link)
+    .then(() => {
+      alert(`Havola nusxalandi! \n\nUshbu havolani mas'ul xodimga yuborishingiz mumkin: \n${link}`);
+    })
+    .catch(err => {
+      console.error("Nusxalashda xatolik:", err);
+      prompt("Havola yaratildi, nusxalab oling:", link);
+    });
+};
+
+const isAssetVerified = (id) => {
+  return verifiedAssets.value.has(id);
+};
+
+const toggleAssetVerification = (asset) => {
+  if (verifiedAssets.value.has(asset.id)) {
+    verifiedAssets.value.delete(asset.id);
+  } else {
+    verifiedAssets.value.add(asset.id);
+  }
+};
+
+const sharedAssets = computed(() => {
+  return assets.value.filter(a => {
+    if (sharedLocation.type === "GLOBAL") return true;
+    if (sharedLocation.type === "ORG") return a.org === sharedLocation.org;
+    if (sharedLocation.type === "FLOOR") return a.org === sharedLocation.org && a.floor === sharedLocation.floor;
+    if (sharedLocation.type === "ROOM") return a.org === sharedLocation.org && a.floor === sharedLocation.floor && a.room === sharedLocation.room;
+    return false;
+  });
+});
+
+const sharedVerifiedCount = computed(() => {
+  return sharedAssets.value.filter(a => verifiedAssets.value.has(a.id)).length;
+});
+
+const sharedTotalCount = computed(() => {
+  return sharedAssets.value.length;
+});
+
+const submitSharedVerification = () => {
+  const todayStr = new Date().toISOString().split('T')[0];
+  
+  const updatePromises = sharedAssets.value.map(asset => {
+    const isVerified = verifiedAssets.value.has(asset.id);
+    const updatedAsset = {
+      ...asset,
+      verificationStatus: isVerified ? 'confirmed' : 'pending',
+      lastVerified: isVerified ? todayStr : ''
+    };
+    
+    // Update local state
+    const idx = assets.value.findIndex(a => a.id === asset.id);
+    if (idx !== -1) {
+      assets.value[idx] = updatedAsset;
+    }
+    
+    if (isOnlineMode.value && db.value) {
+      return db.value.collection("assets").doc(asset.id).set(updatedAsset);
+    }
+    return Promise.resolve();
+  });
+  
+  Promise.all(updatePromises)
+    .then(() => {
+      saveAssetsToLocal();
+      alert("Tekshiruv natijalari muvaffaqiyatli saqlandi va yuborildi! Rahmat.");
+    })
+    .catch(err => {
+      console.error("Verification submit error:", err);
+      alert("Xatolik yuz berdi: " + err.message);
+    });
+};
+
+watch(assets, (newAssets) => {
+  if (isSharedView.value && newAssets && newAssets.length > 0) {
+    newAssets.forEach(a => {
+      if (a.verificationStatus === 'confirmed') {
+        verifiedAssets.value.add(a.id);
+      }
+    });
+  }
+}, { immediate: true });
+
 // Sidebar va Mavzu holatlari
 const theme = ref("dark");
 const isSidebarCollapsed = ref(false);
@@ -1083,11 +1207,15 @@ const setupAuth = () => {
       } else {
         currentUser.value = null;
         currentUserRole.value = "admin";
-        isAuthOverlayOpen.value = true;
+        isAuthOverlayOpen.value = isSharedView.value ? false : true;
       }
     });
   } else {
     currentUserRole.value = "admin"; // Oflaynda admin barcha huquqlarga ega
+    isAuthOverlayOpen.value = false;
+  }
+  
+  if (isSharedView.value) {
     isAuthOverlayOpen.value = false;
   }
 };
@@ -1198,6 +1326,7 @@ onMounted(() => {
   const savedSidebar = localStorage.getItem("inv_sidebar_collapsed");
   isSidebarCollapsed.value = savedSidebar === "true";
 
+  parseShareUrl();
   initFirebase();
   loadDatabase();
   setupAuth();
@@ -1205,7 +1334,94 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="full-screen-app" id="fullScreenApp">
+  <!-- ULASHILGAN KO'RINISH LAYOUT (SHARED VIEW) -->
+  <div v-if="isSharedView" class="shared-view-container" id="sharedViewContainer">
+    <div class="shared-view-card">
+      <div class="shared-view-header">
+        <div class="shared-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="24" height="24" style="color: var(--accent);"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span style="font-family: var(--font-heading); font-weight: 700; letter-spacing: -0.01em;">Aktivlarni Tasdiqlash</span>
+        </div>
+        
+        <div class="shared-meta" v-if="sharedLocation.org">
+          🏢 <strong>{{ sharedLocation.org }}</strong>
+          <span v-if="sharedLocation.floor"> ➔ 📶 {{ formatFloorDisplay(sharedLocation.floor) }}</span>
+          <span v-if="sharedLocation.room"> ➔ 🚪 {{ sharedLocation.room }}</span>
+        </div>
+      </div>
+
+      <div class="shared-progress-banner">
+        <div class="progress-info">
+          <span>Tekshiruv jarayoni: <strong>{{ sharedVerifiedCount }} / {{ sharedTotalCount }}</strong> ta jihoz tasdiqlandi</span>
+          <span style="font-weight: 600;">{{ Math.round((sharedVerifiedCount / (sharedTotalCount || 1)) * 100) }}%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" :style="{ width: ((sharedVerifiedCount / (sharedTotalCount || 1)) * 100) + '%' }"></div>
+        </div>
+      </div>
+
+      <!-- Aktivlar jadvali -->
+      <div class="workspace-table-container" style="margin-top: 1.5rem; flex: 1; overflow-y: auto;">
+        <table class="assets-table">
+          <thead>
+            <tr>
+              <th style="width: 140px;">Inventar №</th>
+              <th>Jihoz Nomi</th>
+              <th style="width: 110px;">Holati</th>
+              <th style="width: 120px;">Mas'ul Xodim</th>
+              <th style="width: 130px; text-align: center;">Mavjudligi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="asset in sharedAssets" :key="asset.id">
+              <td style="font-weight: 600; color: var(--accent);">{{ asset.id }}</td>
+              <td>
+                <div style="font-weight: 500;">{{ asset.name }}</div>
+                <div v-if="asset.model || asset.sn" style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.15rem; font-weight: normal; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                  <span v-if="asset.model" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); padding: 0.02rem 0.25rem; border-radius: var(--radius-sm);">M: {{ asset.model }}</span>
+                  <span v-if="asset.sn" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); padding: 0.02rem 0.25rem; border-radius: var(--radius-sm);">S/N: {{ asset.sn }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="status-pill" :class="asset.status === 'Ishlatilmoqda' ? 'active' : (asset.status === 'Ta\'mirlashda' ? 'repair' : 'reserve')">
+                  {{ asset.status }}
+                </span>
+              </td>
+              <td>{{ asset.owner }}</td>
+              <td style="text-align: center;">
+                <button 
+                  type="button"
+                  @click="toggleAssetVerification(asset)" 
+                  class="btn btn-icon btn-small"
+                  :class="isAssetVerified(asset.id) ? 'btn-success' : 'btn-secondary'"
+                  style="padding: 0.35rem 0.75rem; font-size: 0.72rem; gap: 0.25rem; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm);"
+                >
+                  <svg v-if="isAssetVerified(asset.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="10" height="10"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span v-if="!isAssetVerified(asset.id)">❌ Yo'q (Bor)</span>
+                  <span v-else>✔️ Bor (Mavjud)</span>
+                </button>
+              </td>
+            </tr>
+            <tr v-if="sharedAssets.length === 0">
+              <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                Ushbu joylashuvda hech qanday jihoz topilmadi.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="shared-view-footer">
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Tekshirib bo'lgach, tekshiruv natijalarini tizimga yuborish uchun quyidagi tugmani bosing:</p>
+        <button type="button" @click="submitSharedVerification" class="btn btn-primary" style="padding: 0.75rem; font-size: 0.95rem; width: 100%; border-radius: var(--radius-md);">
+          Tekshiruv Natijalarini Saqlash va Yuborish
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ASOSIY PROGRAMMA LAYOUT -->
+  <div v-else class="full-screen-app" id="fullScreenApp">
     
     <!-- CHAP PANEL: SIDEBAR (NAVIGATION TREE) -->
     <aside class="location-sidebar" :class="{ collapsed: isSidebarCollapsed }" id="locationSidebar">
@@ -1340,6 +1556,12 @@ onMounted(() => {
             <span class="breadcrumb-arrow">&rarr;</span>
             <span class="breadcrumb-item active">{{ selectedLocation.room }}</span>
           </template>
+
+          <!-- Ulashish tugmasi -->
+          <button type="button" @click="copyShareLink" class="share-loc-btn" title="Ushbu joylashuv havolasini ulashish" style="margin-left: 0.85rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+            <span style="font-size: 0.72rem; font-weight: 600;">Ulashish</span>
+          </button>
         </div>
         
         <div class="topbar-actions">
@@ -1506,7 +1728,13 @@ onMounted(() => {
                 🏢 {{ asset.org }} <br> 
                 <span style="font-size: 0.72rem; opacity: 0.8;">📶 {{ formatFloorDisplay(asset.floor) }} &rarr; 🚪 {{ asset.room }}</span>
               </td>
-              <td>{{ asset.owner }}</td>
+              <td>
+                {{ asset.owner }}
+                <div v-if="asset.verificationStatus === 'confirmed'" style="font-size: 0.65rem; color: var(--success); margin-top: 0.15rem; font-weight: 600; display: flex; align-items: center; gap: 0.2rem;" title="Mas'ul tomonidan tasdiqlangan">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="10" height="10"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Mavjud ({{ asset.lastVerified }})</span>
+                </div>
+              </td>
               <td style="font-family: monospace; font-weight: 600; text-align: right;">{{ new Intl.NumberFormat('uz-UZ').format(asset.price || 0) }} UZS</td>
               <td>{{ asset.date || '—' }}</td>
               <td class="actions-col">

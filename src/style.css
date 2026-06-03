@@ -2384,5 +2384,153 @@ label {
   }
 }
 
+/* Ulashish (Share) tugmasi breadcrumb ichida */
+.share-loc-btn {
+  background-color: rgba(37, 99, 235, 0.08) !important;
+  border: 1px solid rgba(37, 99, 235, 0.25) !important;
+  color: var(--accent) !important;
+  padding: 0.25rem 0.6rem !important;
+  border-radius: var(--radius-sm) !important;
+  cursor: pointer !important;
+  transition: all var(--transition-fast) !important;
+  display: inline-flex;
+  align-items: center;
+}
+
+.share-loc-btn:hover {
+  background-color: var(--accent) !important;
+  color: #fff !important;
+  border-color: var(--accent) !important;
+}
+
+/* Ulashilgan ko'rinish (Shared View) */
+.shared-view-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-app);
+  padding: 2rem 1.5rem;
+  overflow-y: auto;
+}
+
+.shared-view-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 900px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.shared-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.shared-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.shared-logo svg {
+  color: var(--accent);
+}
+
+.shared-meta {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-input);
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.shared-progress-banner {
+  background-color: rgba(37, 99, 235, 0.04);
+  border: 1px solid rgba(37, 99, 235, 0.15);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.progress-info strong {
+  color: var(--text-primary);
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--accent);
+  border-radius: 3px;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shared-view-footer {
+  border-top: 1px solid var(--border-color);
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  text-align: center;
+}
+
+.btn-success {
+  background-color: var(--success) !important;
+  color: white !important;
+  border-color: var(--success) !important;
+}
+
+.btn-success:hover {
+  background-color: #15803d !important;
+}
+
+/* Responsiveness for shared view */
+@media (max-width: 768px) {
+  .shared-view-container {
+    padding: 1rem 0.5rem;
+  }
+  .shared-view-card {
+    padding: 1.25rem 1rem;
+    border-radius: var(--radius-md);
+  }
+  .shared-view-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .shared-meta {
+    width: 100%;
+  }
+}
+
 
 
