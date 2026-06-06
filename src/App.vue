@@ -1336,12 +1336,12 @@ const executePrint = () => {
 // ==========================================================================
 const initFirebase = () => {
   const DEFAULT_FIREBASE_CONFIG = {
-    apiKey: "AIzaSyAGWchAmnKk_-m0EPCJJWVI_ciFtkMyCjg",
-    authDomain: "inven-8588f.firebaseapp.com",
-    projectId: "inven-8588f",
-    storageBucket: "inven-8588f.firebasestorage.app",
-    messagingSenderId: "186511543097",
-    appId: "1:186511543097:web:27cce312bacb03fd7576e8"
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
   };
 
   let saved = localStorage.getItem("inv_firebase_config");
@@ -1352,21 +1352,24 @@ const initFirebase = () => {
 
   try {
     const config = JSON.parse(saved);
-    if (!firebase.apps.length) {
-      firebase.initializeApp(config);
+    if (config && config.apiKey && config.projectId) {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(config);
+      }
+      db.value = firebase.firestore();
+      isOnlineMode.value = true;
+      
+      // Oflayn Firestore keshini yoqamiz
+      db.value.enablePersistence({ synchronizeTabs: true }).catch(err => console.warn("Firestore Persistence error:", err));
+      
+      // Form settings pre-fill
+      cloudConfig.apiKey = config.apiKey || "";
+      cloudConfig.projectId = config.projectId || "";
+      cloudConfig.appId = config.appId || "";
+      cloudConfig.authDomain = config.authDomain || "";
+    } else {
+      isOnlineMode.value = false;
     }
-    db.value = firebase.firestore();
-    isOnlineMode.value = true;
-    
-    // Oflayn Firestore keshini yoqamiz
-    db.value.enablePersistence({ synchronizeTabs: true }).catch(err => console.warn("Firestore Persistence error:", err));
-
-    // Form settings pre-fill
-    cloudConfig.apiKey = config.apiKey || "";
-    cloudConfig.projectId = config.projectId || "";
-    cloudConfig.appId = config.appId || "";
-    cloudConfig.authDomain = config.authDomain || "";
-
   } catch(e) {
     console.error("Firebase ulanish xatoligi:", e);
     isOnlineMode.value = false;
