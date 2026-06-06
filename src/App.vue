@@ -1336,22 +1336,33 @@ const executePrint = () => {
 // ==========================================================================
 const initFirebase = () => {
   const DEFAULT_FIREBASE_CONFIG = {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
   };
 
   let saved = localStorage.getItem("inv_firebase_config");
-  if (!saved) {
-    saved = JSON.stringify(DEFAULT_FIREBASE_CONFIG);
-    localStorage.setItem("inv_firebase_config", saved);
+  let config = {};
+  if (saved) {
+    try {
+      config = JSON.parse(saved);
+    } catch (e) {
+      config = {};
+    }
+  }
+
+  // Agar localStorage bo'sh bo'lsa yoki unda kalitlar bo'lmasa, env dan foydalanamiz
+  if (!config || !config.apiKey || !config.projectId) {
+    if (DEFAULT_FIREBASE_CONFIG.apiKey && DEFAULT_FIREBASE_CONFIG.projectId) {
+      config = DEFAULT_FIREBASE_CONFIG;
+      localStorage.setItem("inv_firebase_config", JSON.stringify(DEFAULT_FIREBASE_CONFIG));
+    }
   }
 
   try {
-    const config = JSON.parse(saved);
     if (config && config.apiKey && config.projectId) {
       if (!firebase.apps.length) {
         firebase.initializeApp(config);
