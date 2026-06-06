@@ -435,10 +435,14 @@ const getRoomAssetCount = (orgName, floorName, roomName) => {
 
 // Tashkilot nomi bosh harflari, qavat va xonaga qarab dinamik ID generatsiya qilish
 const generateInventoryId = (orgName, floorName, roomName) => {
-  if (!orgName) return "INV-0001";
+  const safeOrgName = (orgName || "").toString().trim();
+  const safeFloorName = (floorName || "").toString().trim();
+  const safeRoomName = (roomName || "").toString().trim();
+
+  if (!safeOrgName) return "INV-0001";
   
   // 1. Tashkilot bosh harflari
-  const orgInitials = orgName
+  const orgInitials = safeOrgName
     .split(/\s+/)
     .map(w => w.charAt(0))
     .join("")
@@ -447,25 +451,25 @@ const generateInventoryId = (orgName, floorName, roomName) => {
     
   // 2. Qavat (F1, F2 va hokazo ko'rinishida)
   let floorCode = "";
-  const parenthesizedFCode = floorName.match(/\((F[0-9A-Z]+)\)/i);
+  const parenthesizedFCode = safeFloorName.match(/\((F[0-9A-Z]+)\)/i);
   if (parenthesizedFCode) {
     floorCode = parenthesizedFCode[1].toUpperCase();
-  } else if (/^F[0-9A-Z]+$/i.test(floorName.trim())) {
-    floorCode = floorName.trim().toUpperCase();
+  } else if (/^F[0-9A-Z]+$/i.test(safeFloorName)) {
+    floorCode = safeFloorName.toUpperCase();
   } else {
-    let floorNum = floorName.replace(/[^0-9]/g, "");
+    let floorNum = safeFloorName.replace(/[^0-9]/g, "");
     if (floorNum) {
       floorCode = "F" + floorNum;
     } else {
-      const initials = floorName.split(/\s+/).map(w => w.charAt(0)).join("").replace(/[^a-zA-Z]/g, "").toUpperCase();
-      floorCode = "F" + (initials || floorName.substring(0, 1).toUpperCase());
+      const initials = safeFloorName.split(/\s+/).map(w => w.charAt(0)).join("").replace(/[^a-zA-Z]/g, "").toUpperCase();
+      floorCode = "F" + (initials || safeFloorName.substring(0, 1).toUpperCase());
     }
   }
   
   // 3. Xona (raqamlar yoki bosh harflar)
-  let roomCode = roomName.replace(/[^0-9]/g, "");
+  let roomCode = safeRoomName.replace(/[^0-9]/g, "");
   if (!roomCode) {
-    roomCode = roomName
+    roomCode = safeRoomName
       .split(/\s+/)
       .map(w => w.charAt(0))
       .join("")
@@ -474,7 +478,7 @@ const generateInventoryId = (orgName, floorName, roomName) => {
       .toUpperCase();
   }
   if (!roomCode) {
-    roomCode = roomName.substring(0, 3).replace(/[^a-zA-Z]/g, "").toUpperCase();
+    roomCode = safeRoomName.substring(0, 3).replace(/[^a-zA-Z]/g, "").toUpperCase();
   }
   if (!roomCode) roomCode = "RM";
 
@@ -841,11 +845,18 @@ const openAddAssetModal = () => {
   
   // Pre-fill joylashuvni tanlangan joylashuvga moslab tanlash
   assetForm.org = selectedLocation.org || (locations.value[0] ? locations.value[0].name : "");
-  assetForm.floor = selectedLocation.floor || (availableFloors.value[0] ? availableFloors.value[0].name : "");
-  assetForm.room = selectedLocation.room || (availableRooms.value[0] ? availableRooms.value[0] : "");
   
-  // Joylashuvga qarab yangi inventar raqamini generatsiya qilish
-  assetForm.id = generateInventoryId(assetForm.org, assetForm.floor, assetForm.room);
+  // Watcher-lar asinxron ishga tushib, tanlangan qiymatlarni o'chirib yubormasligi uchun
+  // nextTick nested zanjiri orqali qadam-baqadam o'rnatamiz
+  nextTick(() => {
+    assetForm.floor = selectedLocation.floor || (availableFloors.value[0] ? availableFloors.value[0].name : "");
+    nextTick(() => {
+      assetForm.room = selectedLocation.room || (availableRooms.value[0] ? availableRooms.value[0] : "");
+      
+      // Joylashuvga qarab yangi inventar raqamini generatsiya qilish
+      assetForm.id = generateInventoryId(assetForm.org, assetForm.floor, assetForm.room);
+    });
+  });
   
   assetForm.model = "";
   assetForm.sn = "";
