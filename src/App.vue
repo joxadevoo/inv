@@ -290,7 +290,7 @@ watch(assets, (newAssets) => {
 }, { immediate: true });
 
 // Sidebar va Mavzu holatlari
-const theme = ref("dark");
+const theme = ref("light");
 const isSidebarCollapsed = ref(false);
 const expandedNodes = reactive({
   orgs: {},
@@ -1518,7 +1518,7 @@ const openPrivacyModalWithTitle = (title) => {
 // Lifecycle Hooks
 onMounted(() => {
   // Mavzuni tiklash
-  const savedTheme = localStorage.getItem("inv_theme") || "dark";
+  const savedTheme = localStorage.getItem("inv_theme") || "light";
   theme.value = savedTheme;
   document.documentElement.setAttribute("data-theme", savedTheme);
 
@@ -1724,11 +1724,6 @@ onMounted(() => {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
           </button>
         </div>
-
-        <button v-if="currentUserRole === 'admin' && isOnlineMode" @click="openAdminUsersModal" id="adminUsersManagementBtn" class="btn btn-secondary btn-icon sidebar-theme-btn" style="margin-bottom: 0.5rem; justify-content: flex-start; width: 100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-          <span class="theme-btn-text">Xodimlar Boshqaruvi</span>
-        </button>
 
         <button v-if="currentUserRole === 'admin'" @click="isCloudSettingsOpen = true" id="sidebarCloudSettingsBtn" class="btn btn-secondary btn-icon sidebar-theme-btn" style="margin-bottom: 0.5rem; justify-content: flex-start; width: 100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">

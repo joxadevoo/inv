@@ -2,68 +2,80 @@
    MODDIR BOYLIKLAR INVENTARIZATSIYASI - IERARXIK PROFESSIONAL DIZAYN
    ========================================================================== */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
 /* Shriftlar va Asosiy parametrlar */
 :root {
   --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  /* Qorong'u Mavzu O'zgaruvchilari (Standart) */
-  --bg-app: #080c14;
-  --bg-sidebar: #0f1524;
-  --bg-card: #121a2e;
-  --bg-input: #1b253f;
-  --border-color: #243153;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  
-  --accent: #4f46e5; /* Indigo */
-  --accent-hover: #4338ca;
-  --accent-light: rgba(79, 70, 229, 0.12);
-  
-  --success: #10b981; /* Emerald */
-  --success-light: rgba(16, 185, 129, 0.12);
-  
-  --warning: #f59e0b; /* Amber */
-  --warning-light: rgba(245, 158, 11, 0.12);
-  
-  --danger: #ef4444; /* Red */
-  --danger-light: rgba(239, 68, 68, 0.12);
-  
-  --info: #06b6d4; /* Cyan */
-  --info-light: rgba(6, 182, 212, 0.12);
-
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -2px rgba(0, 0, 0, 0.15);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s ease;
-}
-
-/* Yorug' Mavzu O'zgaruvchilari */
-[data-theme="light"] {
-  --bg-app: #f8fafc;
-  --bg-sidebar: #ffffff;
+  /* Yorug' Mavzu O'zgaruvchilari (Standart) - Soft Cream / Qaymoqrang & Minimalist */
+  --bg-app: #faf8f5;
+  --bg-sidebar: #f3f0e8;
   --bg-card: #ffffff;
-  --bg-input: #f1f5f9;
-  --border-color: #cbd5e1;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
+  --bg-input: #ffffff;
+  --border-color: #e3ded5;
+  --text-primary: #1e1e24;
+  --text-secondary: #706f7b;
   
   --accent: #4f46e5;
+  --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%);
   --accent-hover: #3730a3;
   --accent-light: rgba(79, 70, 229, 0.08);
   
+  --success: #10b981;
   --success-light: rgba(16, 185, 129, 0.08);
-  --warning-light: rgba(245, 158, 11, 0.08);
-  --danger-light: rgba(239, 68, 68, 0.08);
-  --info-light: rgba(6, 182, 212, 0.08);
   
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --warning: #f59e0b;
+  --warning-light: rgba(245, 158, 11, 0.08);
+  
+  --danger: #ef4444;
+  --danger-light: rgba(239, 68, 68, 0.08);
+  
+  --info: #0ea5e9;
+  --info-light: rgba(14, 165, 233, 0.08);
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 10px 30px -10px rgba(79, 70, 229, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 20px 40px -15px rgba(79, 70, 229, 0.12), 0 4px 12px rgba(79, 70, 229, 0.03);
+  --radius-sm: 8px;
+  --radius-md: 9999px;
+  --radius-lg: 24px;
+  
+  --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Qorong'u Mavzu O'zgaruvchilari - Minimalist & Obsidian Neon */
+[data-theme="dark"] {
+  --bg-app: #030712;
+  --bg-sidebar: #090d16;
+  --bg-card: #0f172a;
+  --bg-input: #1e293b;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  
+  --accent: #6366f1;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+  --accent-hover: #4f46e5;
+  --accent-light: rgba(99, 102, 241, 0.15);
+  
+  --success: #10b981;
+  --success-light: rgba(16, 185, 129, 0.15);
+  
+  --warning: #f59e0b;
+  --warning-light: rgba(245, 158, 11, 0.15);
+  
+  --danger: #ef4444;
+  --danger-light: rgba(239, 68, 68, 0.15);
+  
+  --info: #06b6d4;
+  --info-light: rgba(6, 182, 212, 0.15);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 4px 10px -3px rgba(99, 102, 241, 0.04);
+  --shadow-lg: 0 20px 40px -5px rgba(0, 0, 0, 0.4), 0 5px 15px -2px rgba(99, 102, 241, 0.1);
 }
 
 /* Global Reset */
@@ -151,11 +163,13 @@ body {
 }
 
 .sidebar-header {
-  padding: 1.25rem 1.5rem;
+  height: 70px;
+  padding: 0 1.5rem;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-sizing: border-box;
 }
 
 .sidebar-logo {
@@ -231,19 +245,19 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #6366f1 0%, var(--accent) 100%);
+  background: var(--accent-gradient);
   color: #ffffff;
   border: none;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
 }
 .btn-primary:hover {
-  background: linear-gradient(135deg, #818cf8 0%, var(--accent-hover) 100%);
-  transform: translateY(-1.5px);
-  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
 }
 .btn-primary:active {
   transform: translateY(0) scale(0.96);
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
 }
 
 .btn-secondary {
@@ -311,12 +325,14 @@ body {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  background: none;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: var(--radius-sm);
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -335,8 +351,8 @@ body {
 }
 
 .add-btn-small svg {
-  width: 1rem;
-  height: 1rem;
+  width: 16px !important;
+  height: 16px !important;
 }
 
 /* Hududlar Daraxti Konteyneri */
@@ -530,14 +546,15 @@ body {
   min-width: 0;
 }
 
-/* Topbar Header */
 .workspace-header {
-  padding: 1.25rem 1.5rem;
+  height: 70px;
+  padding: 0 1.5rem;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
   background-color: rgba(255, 255, 255, 0.01);
+  box-sizing: border-box;
 }
 
 .header-breadcrumbs {
@@ -680,7 +697,7 @@ body {
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 0.85rem;
-  padding: 0.55rem 1rem 0.55rem 2.25rem;
+  padding: 0.55rem 1.5rem 0.55rem 2.5rem;
   border-radius: var(--radius-md);
   outline: none;
   transition: all var(--transition-fast);
@@ -702,16 +719,16 @@ body {
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 0.85rem;
-  padding: 0.55rem 1rem;
+  padding: 0.55rem 1.5rem;
   border-radius: var(--radius-md);
   outline: none;
   cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%239ca3af' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.75rem center;
+  background-position: right 1.25rem center;
   background-size: 0.85rem;
-  padding-right: 2rem;
+  padding-right: 2.5rem;
 }
 
 .filter-wrapper select:focus {
@@ -801,7 +818,7 @@ body {
 }
 
 .assets-table tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.01);
+  background-color: var(--accent-light);
 }
 
 /* Status Badges */
@@ -966,23 +983,35 @@ label {
 }
 
 .form-group input,
-.form-group select,
-.form-group textarea {
+.form-group select {
   background-color: var(--bg-input);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   border-radius: var(--radius-md);
-  padding: 0.55rem 0.75rem;
+  padding: 0.55rem 1.25rem;
   font-family: var(--font-body);
   font-size: 0.85rem;
   outline: none;
-  transition: border-color var(--transition-fast);
+  transition: all var(--transition-fast);
+}
+
+.form-group textarea {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  outline: none;
+  transition: all var(--transition-fast);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
 }
 
 .input-helper {
@@ -2485,21 +2514,40 @@ label {
 
 /* Ulashish (Share) tugmasi breadcrumb ichida */
 .share-loc-btn {
-  background-color: rgba(37, 99, 235, 0.08) !important;
-  border: 1px solid rgba(37, 99, 235, 0.25) !important;
-  color: var(--accent) !important;
-  padding: 0.25rem 0.6rem !important;
-  border-radius: var(--radius-sm) !important;
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-secondary) !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
   cursor: pointer !important;
   transition: all var(--transition-fast) !important;
-  display: inline-flex;
-  align-items: center;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.share-loc-btn span {
+  display: none !important;
+}
+
+.share-loc-btn svg {
+  width: 16px !important;
+  height: 16px !important;
 }
 
 .share-loc-btn:hover {
-  background-color: var(--accent) !important;
-  color: #fff !important;
   border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  background-color: var(--accent-light) !important;
+  transform: translateY(-1px) !important;
+}
+
+.share-loc-btn:active {
+  transform: scale(0.92) !important;
 }
 
 /* Ulashilgan ko'rinish (Shared View) */
