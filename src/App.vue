@@ -1543,10 +1543,25 @@ onMounted(() => {
           <span style="font-family: var(--font-heading); font-weight: 700; letter-spacing: -0.01em;">Aktivlarni Tasdiqlash</span>
         </div>
         
-        <div class="shared-meta" v-if="sharedLocation.org">
-          🏢 <strong>{{ sharedLocation.org }}</strong>
-          <span v-if="sharedLocation.floor"> ➔ 📶 {{ formatFloorDisplay(sharedLocation.floor) }}</span>
-          <span v-if="sharedLocation.room"> ➔ 🚪 {{ sharedLocation.room }}</span>
+        <div class="shared-meta" v-if="sharedLocation.org" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem;">
+          <span style="display: inline-flex; align-items: center; gap: 0.25rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color: var(--accent);"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="16"></line><line x1="15" y1="22" x2="15" y2="16"></line><line x1="9" y1="16" x2="15" y2="16"></line><path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01M12 6h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01"></path></svg>
+            <strong>{{ sharedLocation.org }}</strong>
+          </span>
+          <template v-if="sharedLocation.floor">
+            <span style="opacity: 0.5;">➔</span>
+            <span style="display: inline-flex; align-items: center; gap: 0.25rem;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color: var(--success);"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+              <span>{{ formatFloorDisplay(sharedLocation.floor) }}</span>
+            </span>
+          </template>
+          <template v-if="sharedLocation.room">
+            <span style="opacity: 0.5;">➔</span>
+            <span style="display: inline-flex; align-items: center; gap: 0.25rem;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color: var(--warning);"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+              <span>{{ sharedLocation.room }}</span>
+            </span>
+          </template>
         </div>
       </div>
 
@@ -1569,7 +1584,6 @@ onMounted(() => {
               <th style="width: 250px;">Jihoz Nomi</th>
               <th style="width: 140px;">Kategoriya</th>
               <th style="width: 110px;">Holati</th>
-              <th style="width: 160px;">Joylashuvi</th>
               <th style="width: 140px;">Mas'ul Xodim</th>
               <th style="width: 130px; text-align: right;">Narxi (UZS)</th>
               <th style="width: 110px;">Sotib olingan</th>
@@ -1593,10 +1607,6 @@ onMounted(() => {
                   {{ asset.status }}
                 </span>
               </td>
-              <td style="font-size: 0.78rem; color: var(--text-secondary);">
-                🏢 {{ asset.org }} <br>
-                <span style="font-size: 0.72rem; opacity: 0.8;">📶 {{ formatFloorDisplay(asset.floor) }} &rarr; 🚪 {{ asset.room }}</span>
-              </td>
               <td>{{ asset.owner }}</td>
               <td style="font-family: monospace; font-weight: 600; text-align: right;">{{ new Intl.NumberFormat('uz-UZ').format(asset.price || 0) }} UZS</td>
               <td>{{ asset.date || '—' }}</td>
@@ -1611,9 +1621,14 @@ onMounted(() => {
                   :class="isAssetVerified(asset.id) ? 'btn-success' : 'btn-secondary'"
                   style="padding: 0.35rem 0.75rem; font-size: 0.72rem; gap: 0.25rem; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm);"
                 >
-                  <svg v-if="isAssetVerified(asset.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="10" height="10"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span v-if="!isAssetVerified(asset.id)">❌ Yo'q (Bor)</span>
-                  <span v-else>✔️ Bor (Mavjud)</span>
+                  <span v-if="!isAssetVerified(asset.id)" style="display: inline-flex; align-items: center; gap: 0.2rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="10" height="10" style="color: var(--danger);"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    Yo'q (Bor)
+                  </span>
+                  <span v-else style="display: inline-flex; align-items: center; gap: 0.2rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="10" height="10" style="color: var(--success);"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Bor (Mavjud)
+                  </span>
                 </button>
               </td>
             </tr>
@@ -1769,7 +1784,7 @@ onMounted(() => {
 
           <!-- Ulashish tugmasi -->
           <button type="button" @click="copyShareLink" class="share-loc-btn" title="Ushbu joylashuv havolasini ulashish" style="margin-left: 0.85rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
             <span style="font-size: 0.72rem; font-weight: 600;">Ulashish</span>
           </button>
         </div>
@@ -1935,7 +1950,6 @@ onMounted(() => {
               <th @click="sortBy('name')" class="sortable" :class="{ sorted: currentSortColumn === 'name', desc: currentSortDirection === 'desc' }">Jihoz Nomi</th>
               <th @click="sortBy('category')" class="sortable" :class="{ sorted: currentSortColumn === 'category', desc: currentSortDirection === 'desc' }">Kategoriya</th>
               <th @click="sortBy('status')" class="sortable" :class="{ sorted: currentSortColumn === 'status', desc: currentSortDirection === 'desc' }">Holati</th>
-              <th @click="sortBy('org')" class="sortable" :class="{ sorted: currentSortColumn === 'org', desc: currentSortDirection === 'desc' }">Joylashuvi (Ierarxiya)</th>
               <th @click="sortBy('owner')" class="sortable" :class="{ sorted: currentSortColumn === 'owner', desc: currentSortDirection === 'desc' }">Mas'ul xodim</th>
               <th @click="sortBy('price')" class="sortable" :class="{ sorted: currentSortColumn === 'price', desc: currentSortDirection === 'desc' }">Narxi (UZS)</th>
               <th @click="sortBy('date')" class="sortable" :class="{ sorted: currentSortColumn === 'date', desc: currentSortDirection === 'desc' }">Sotib olingan</th>
@@ -1960,10 +1974,6 @@ onMounted(() => {
                 <span class="status-pill" :class="asset.status === 'Ishlatilmoqda' ? 'active' : (asset.status === 'Ta\'mirlashda' ? 'repair' : 'reserve')">
                   {{ asset.status }}
                 </span>
-              </td>
-              <td style="font-size: 0.78rem; color: var(--text-secondary);">
-                🏢 {{ asset.org }} <br> 
-                <span style="font-size: 0.72rem; opacity: 0.8;">📶 {{ formatFloorDisplay(asset.floor) }} &rarr; 🚪 {{ asset.room }}</span>
               </td>
               <td>
                 {{ asset.owner }}
@@ -2429,7 +2439,7 @@ onMounted(() => {
       
       <!-- O'ng Ustun: Kirish / Ro'yxatdan O'tish Formasi -->
       <div class="landing-auth-section">
-        <div class="auth-card" style="box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); background-color: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); width: 100%; max-width: 400px; padding: 2rem; border-radius: 16px;">
+        <div class="auth-card" style="box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); background-color: var(--bg-card); width: 100%; max-width: 400px; padding: 2.25rem 2rem; border-radius: 20px;">
           <div class="auth-header">
             <div class="auth-logo" style="margin-bottom: 0.5rem;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28" style="color: var(--accent);"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
