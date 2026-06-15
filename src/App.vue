@@ -496,7 +496,11 @@ const generateInventoryId = (orgName, floorName, roomName) => {
       const num = parseInt(lastPart, 10);
       return isNaN(num) ? 0 : num;
     });
-    nextSerial = Math.max(...serials) + 1;
+    // O'chirilgan yoki bo'sh qolgan raqamlarni to'ldirish uchun ketma-ketlikdagi birinchi bo'sh musbat butun sonni topamiz
+    const serialSet = new Set(serials);
+    while (serialSet.has(nextSerial)) {
+      nextSerial++;
+    }
   }
 
   // 4-xonali ketma-ket raqam (0001, 0002...)
