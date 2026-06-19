@@ -1447,6 +1447,133 @@ label {
     background-color: #f2f2f2 !important;
     font-weight: bold !important;
   }
+
+  /* GURUH STIKERLARINI CHOP ETISH */
+  body.printing-bulk-qr {
+    page: sticker !important;
+    visibility: visible !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: auto !important;
+  }
+
+  body.printing-bulk-qr html,
+  body.printing-bulk-qr body {
+    background-color: #ffffff !important;
+    background: none !important;
+  }
+
+  body.printing-bulk-qr .full-screen-app,
+  body.printing-bulk-qr .location-sidebar,
+  body.printing-bulk-qr .main-workspace,
+  body.printing-bulk-qr .modal-overlay,
+  body.printing-bulk-qr .modal-card,
+  body.printing-bulk-qr header,
+  body.printing-bulk-qr section,
+  body.printing-bulk-qr footer {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body.printing-bulk-qr #bulkQrPrintContainer,
+  body.printing-bulk-qr #bulkQrPrintContainer * {
+    visibility: visible !important;
+  }
+
+  body.printing-bulk-qr #bulkQrPrintContainer {
+    display: block !important;
+    width: 40mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.printing-bulk-qr .bulk-sticker-element {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 40mm !important;
+    height: 30mm !important;
+    padding: 1.5mm !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    overflow: hidden !important;
+    page-break-after: always !important;
+    page-break-inside: avoid !important;
+    break-after: page !important;
+    position: relative !important;
+  }
+
+  body.printing-bulk-qr .bulk-sticker-element .sticker-qr-side {
+    width: 17mm !important;
+    height: 17mm !important;
+    flex: 0 0 17mm !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  body.printing-bulk-qr .bulk-sticker-element .sticker-qr-side img {
+    width: 17mm !important;
+    height: 17mm !important;
+    display: block !important;
+  }
+
+  body.printing-bulk-qr .bulk-sticker-element .sticker-info-side {
+    flex: 1 1 auto !important;
+    padding-left: 1mm !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+  }
+
+  body.printing-bulk-qr .bulk-sticker-element .sticker-header-org {
+    font-size: 4.8px !important;
+    margin-bottom: 0.4mm !important;
+    border-bottom: 0.2px solid #000000 !important;
+    padding-bottom: 0.2mm !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  body.printing-bulk-qr .bulk-sticker-element .sticker-inv-num {
+    font-size: 7.5px !important;
+    margin-bottom: 0.4mm !important;
+    font-weight: bold !important;
+  }
+
+  body.printing-bulk-qr .bulk-sticker-element .sticker-asset-name {
+    font-size: 5.8px !important;
+    line-height: 1.1 !important;
+    margin-bottom: 0.4mm !important;
+    font-weight: bold !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  body.printing-bulk-qr .bulk-sticker-element .sticker-owner,
+  body.printing-bulk-qr .bulk-sticker-element .sticker-location {
+    font-size: 4.5px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
 }
 
 /* ==========================================================================

@@ -377,6 +377,7 @@ let unsubscribeAssets = null;
 // QR Stiker chop etish preview ma'lumotlari
 const stickerAsset = ref(null);
 const stickerQrCanvas = ref(null);
+const bulkQrAssets = ref([]);
 
 // ==========================================================================
 // 5. CASCADING SELECT DROPDOWNS (IERARXIK FORM SELECTION)
@@ -1335,6 +1336,75 @@ const executePrint = () => {
   window.print();
 };
 
+const generateQrDataUrl = async (asset) => {
+  const qrData = `AKTIV: ${asset.id}\nNOMI: ${asset.name}\nHUDUD: ${asset.org} -> ${asset.floor} -> ${asset.room}${asset.model ? `\nMODEL: ${asset.model}` : ''}${asset.sn ? `\nS/N: ${asset.sn}` : ''}\nMAS'UL: ${asset.owner || "Yo'q"}\nHOLAT: ${asset.status}${asset.notes ? `\nIZOH: ${asset.notes}` : ''}`;
+  try {
+    return await QRCode.toDataURL(qrData, {
+      width: 150,
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#ffffff'
+      }
+    });
+  } catch (err) {
+    console.error("QR Code generation error:", err);
+    return "";
+  }
+};
+
+const printBulkQrs = async (assetsToPrint) => {
+  if (!assetsToPrint || assetsToPrint.length === 0) {
+    alert("Chop etish uchun hech qanday jihoz tanlanmagan!");
+    return;
+  }
+  
+  isAssetsLoading.value = true;
+  
+  try {
+    const items = [];
+    for (const asset of assetsToPrint) {
+      const qrDataUrl = await generateQrDataUrl(asset);
+      items.push({
+        asset,
+        qrDataUrl
+      });
+    }
+    
+    bulkQrAssets.value = items;
+    
+    nextTick(() => {
+      setTimeout(() => {
+        document.body.classList.add("printing-bulk-qr");
+        nextTick(() => {
+          window.print();
+          document.body.classList.remove("printing-bulk-qr");
+          bulkQrAssets.value = [];
+          isAssetsLoading.value = false;
+        });
+      }, 500);
+    });
+  } catch (err) {
+    console.error("Bulk QR printing error:", err);
+    isAssetsLoading.value = false;
+    alert("Xatolik yuz berdi: " + err.message);
+  }
+};
+
+const printAllRoomQrs = () => {
+  const assetsToPrint = activeLocationAssets.value;
+  if (!assetsToPrint || assetsToPrint.length === 0) {
+    alert("Xonada hech qanday jihoz topilmadi!");
+    return;
+  }
+  printBulkQrs(assetsToPrint);
+};
+
+const bulkPrintQrs = () => {
+  const assetsToPrint = assets.value.filter(a => selectedAssetIds.value.includes(a.id));
+  printBulkQrs(assetsToPrint);
+};
+
 // ==========================================================================
 // 11. FIREBASE AUTHENTICATION (USER ACCESS) VA ROLLAR
 // ==========================================================================
@@ -1791,6 +1861,12 @@ onMounted(() => {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
             <span style="font-size: 0.72rem; font-weight: 600;">Ulashish</span>
           </button>
+
+          <!-- Xona barcha QR-kodlarini chop etish tugmasi -->
+          <button v-if="selectedLocation.type === 'ROOM' && activeLocationAssets.length > 0" type="button" @click="printAllRoomQrs" class="share-loc-btn print-room-qrs-btn" title="Xonadagi barcha jihozlarning QR-kod stikerlarini chop etish" style="margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem; border-color: var(--warning); color: var(--warning);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="3" height="3"></rect><rect x="14" y="7" width="3" height="3"></rect><rect x="7" y="14" width="3" height="3"></rect><rect x="14" y="14" width="3" height="3"></rect></svg>
+            <span style="font-size: 0.72rem; font-weight: 600;">Barcha QR stikerlar</span>
+          </button>
         </div>
         
         <div class="topbar-actions">
@@ -1926,6 +2002,12 @@ onMounted(() => {
           <span style="color: var(--accent); font-weight: 700;">✔️ {{ selectedAssetIds.length }}</span> ta jihoz tanlandi
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <!-- QR stikerlarini bulk chop etish tugmasi -->
+          <button @click="bulkPrintQrs" class="btn btn-secondary btn-icon" style="padding: 0.4rem 0.85rem; font-size: 0.78rem; border-color: rgba(245, 158, 11, 0.25); background: rgba(245, 158, 11, 0.05); color: var(--warning);" title="Tanlangan jihozlarning QR-kod stikerlarini chop etish">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="3" height="3"></rect><rect x="14" y="7" width="3" height="3"></rect><rect x="7" y="14" width="3" height="3"></rect><rect x="14" y="14" width="3" height="3"></rect></svg>
+            <span style="font-weight: 600;">QR stiker chop etish</span>
+          </button>
+
           <button @click="bulkResetVerification" class="btn btn-secondary btn-icon" style="padding: 0.4rem 0.85rem; font-size: 0.78rem; border-color: rgba(37, 99, 235, 0.25); background: rgba(37, 99, 235, 0.05); color: var(--accent);" title="Tanlangan jihozlar tasdiqlanishini bekor qilish">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M2.5 2v6h6M21.5 22v-6h-6"></path><path d="M22 11.5A10 10 0 0 0 3.2 7.2l-.7 2.8M2 12.5a10 10 0 0 0 18.8 4.3l.7-2.8"></path></svg>
             <span style="font-weight: 600;">Tasdiqni bekor qilish</span>
@@ -2596,6 +2678,22 @@ onMounted(() => {
       </div>
       <div class="modal-footer">
         <button type="button" @click="isAdminUsersModalOpen = false" class="btn btn-secondary">Yopish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chop etiluvchi bulk QR kodlar containeri (faqat chop etish vaqtida ko'rinadi) -->
+  <div id="bulkQrPrintContainer" v-if="bulkQrAssets.length > 0" style="display: none;">
+    <div v-for="item in bulkQrAssets" :key="item.asset.id" class="bulk-sticker-element">
+      <div class="sticker-qr-side">
+        <img :src="item.qrDataUrl" style="width: 17mm; height: 17mm; display: block;" />
+      </div>
+      <div class="sticker-info-side">
+        <div class="sticker-header-org">{{ item.asset.org.toUpperCase() }}</div>
+        <div class="sticker-inv-num">{{ item.asset.id }}</div>
+        <div class="sticker-asset-name">{{ item.asset.name }}</div>
+        <div class="sticker-owner">M: {{ item.asset.owner || "Yo'q" }}</div>
+        <div class="sticker-location">Q: {{ formatFloorDisplay(item.asset.floor) }} / X: {{ item.asset.room }}</div>
       </div>
     </div>
   </div>
