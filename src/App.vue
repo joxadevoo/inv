@@ -3,6 +3,8 @@ import { ref, shallowRef, reactive, computed, onMounted, watch, nextTick } from 
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
+import { getApp } from 'firebase/app';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 import QRCode from 'qrcode';
 
@@ -1440,12 +1442,17 @@ const initFirebase = () => {
     if (config && config.apiKey && config.projectId) {
       if (!firebase.apps.length) {
         firebase.initializeApp(config);
+        
+        // Yangi formatdagi persistentLocalCache orqali offline kesh sozlamalarini o'rnatamiz
+        const app = getApp();
+        initializeFirestore(app, {
+          localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager()
+          })
+        });
       }
       db.value = firebase.firestore();
       isOnlineMode.value = true;
-      
-      // Oflayn Firestore keshini yoqamiz
-      db.value.enablePersistence({ synchronizeTabs: true }).catch(err => console.warn("Firestore Persistence error:", err));
       
       // Form settings pre-fill
       cloudConfig.apiKey = config.apiKey || "";
