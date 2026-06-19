@@ -1464,6 +1464,14 @@ label {
     background: none !important;
   }
 
+  body.printing-table #app,
+  body.printing-bulk-qr #app {
+    height: auto !important;
+    width: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
   body.printing-bulk-qr .full-screen-app,
   body.printing-bulk-qr .location-sidebar,
   body.printing-bulk-qr .main-workspace,
