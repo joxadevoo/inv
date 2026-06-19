@@ -1508,10 +1508,13 @@ label {
     color: #000000 !important;
     border: none !important;
     overflow: hidden !important;
-    page-break-after: always !important;
     page-break-inside: avoid !important;
-    break-after: page !important;
     position: relative !important;
+  }
+
+  body.printing-bulk-qr .bulk-sticker-element:not(:last-child) {
+    page-break-after: always !important;
+    break-after: page !important;
   }
 
   body.printing-bulk-qr .bulk-sticker-element .sticker-qr-side {
