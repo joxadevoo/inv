@@ -1199,16 +1199,16 @@ label {
    ========================================================================== */
 @media print {
   /* 1. Ekrandagi barcha narsani yashirish (Faqat sticker chop etilayotganda) */
-  body:not(.printing-table) html, 
-  body:not(.printing-table) body, 
-  body:not(.printing-table) .full-screen-app, 
-  body:not(.printing-table) .location-sidebar, 
-  body:not(.printing-table) .main-workspace, 
-  body:not(.printing-table) .modal-overlay, 
-  body:not(.printing-table) .modal-card, 
-  body:not(.printing-table) header, 
-  body:not(.printing-table) section, 
-  body:not(.printing-table) footer {
+  body:not(.printing-table):not(.printing-bulk-qr) html, 
+  body:not(.printing-table):not(.printing-bulk-qr) body, 
+  body:not(.printing-table):not(.printing-bulk-qr) .full-screen-app, 
+  body:not(.printing-table):not(.printing-bulk-qr) .location-sidebar, 
+  body:not(.printing-table):not(.printing-bulk-qr) .main-workspace, 
+  body:not(.printing-table):not(.printing-bulk-qr) .modal-overlay, 
+  body:not(.printing-table):not(.printing-bulk-qr) .modal-card, 
+  body:not(.printing-table):not(.printing-bulk-qr) header, 
+  body:not(.printing-table):not(.printing-bulk-qr) section, 
+  body:not(.printing-table):not(.printing-bulk-qr) footer {
     visibility: hidden !important;
     background: none !important;
     background-color: transparent !important;

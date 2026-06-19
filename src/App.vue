@@ -1380,9 +1380,11 @@ const printBulkQrs = async (assetsToPrint) => {
         document.body.classList.add("printing-bulk-qr");
         nextTick(() => {
           window.print();
-          document.body.classList.remove("printing-bulk-qr");
-          bulkQrAssets.value = [];
-          isAssetsLoading.value = false;
+          setTimeout(() => {
+            document.body.classList.remove("printing-bulk-qr");
+            bulkQrAssets.value = [];
+            isAssetsLoading.value = false;
+          }, 1000);
         });
       }, 500);
     });
