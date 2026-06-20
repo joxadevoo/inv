@@ -381,6 +381,10 @@ const stickerAsset = ref(null);
 const stickerQrCanvas = ref(null);
 const bulkQrAssets = ref([]);
 
+// Batafsil ko'rish modal holatlari
+const isDetailsModalOpen = ref(false);
+const detailAsset = ref(null);
+
 // ==========================================================================
 // 5. CASCADING SELECT DROPDOWNS (IERARXIK FORM SELECTION)
 // ==========================================================================
@@ -1338,6 +1342,11 @@ const executePrint = () => {
   window.print();
 };
 
+const viewAssetDetails = (asset) => {
+  detailAsset.value = asset;
+  isDetailsModalOpen.value = true;
+};
+
 const generateQrDataUrl = async (asset) => {
   const qrData = `AKTIV: ${asset.id}\nNOMI: ${asset.name}\nHUDUD: ${asset.org} -> ${asset.floor} -> ${asset.room}${asset.model ? `\nMODEL: ${asset.model}` : ''}${asset.sn ? `\nS/N: ${asset.sn}` : ''}\nMAS'UL: ${asset.owner || "Yo'q"}\nHOLAT: ${asset.status}${asset.notes ? `\nIZOH: ${asset.notes}` : ''}`;
   try {
@@ -2081,6 +2090,10 @@ onMounted(() => {
               <td>{{ asset.date || '—' }}</td>
               <td class="actions-col">
                 <div style="display: flex; gap: 0.4rem; justify-content: center; align-items: center;">
+                  <!-- Batafsil Ko'rish -->
+                  <button @click="viewAssetDetails(asset)" class="action-icon view-asset-btn" title="Batafsil ko'rish">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  </button>
                   <!-- QR Stiker Chop Etish -->
                   <button @click="openQrModal(asset)" class="action-icon print-qr-btn" title="QR stiker chop etish">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="3" height="3"></rect><rect x="14" y="7" width="3" height="3"></rect><rect x="7" y="14" width="3" height="3"></rect><rect x="14" y="14" width="3" height="3"></rect></svg>
@@ -2327,6 +2340,83 @@ onMounted(() => {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg" width="16" height="16"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
           Chop Etish
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: JIHOD BATAFSIL MA'LUMOTI -->
+  <div class="modal-overlay" :class="{ open: isDetailsModalOpen }" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Jihoz Haqida Batafsil Ma'lumot</h3>
+        <button @click="isDetailsModalOpen = false" class="close-btn" aria-label="Yopish">&times;</button>
+      </div>
+      <div class="modal-body" v-if="detailAsset" style="padding: 1.5rem; overflow-y: auto;">
+        <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+          <!-- Nomi va Inventar raqami -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            <div>
+              <h4 style="font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--text-primary);">{{ detailAsset.name }}</h4>
+              <span style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; display: inline-block;">Kategoriya: <strong style="color: var(--text-primary);">{{ detailAsset.category }}</strong></span>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-family: monospace; font-size: 0.95rem; font-weight: 700; background: rgba(37, 99, 235, 0.1); color: var(--accent); padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); border: 1px solid rgba(37, 99, 235, 0.2);">{{ detailAsset.id }}</span>
+              <div style="margin-top: 0.4rem;">
+                <span class="status-pill" :class="detailAsset.status === 'Ishlatilmoqda' ? 'active' : (detailAsset.status === 'Ta\'mirlashda' ? 'repair' : 'reserve')">
+                  {{ detailAsset.status }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Asosiy tafsilotlar jadvali -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Jihoz Modeli</span>
+              <span style="font-weight: 600; color: var(--text-primary);">{{ detailAsset.model || '—' }}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Seriya Raqami (S/N)</span>
+              <span style="font-weight: 600; color: var(--text-primary); font-family: monospace;">{{ detailAsset.sn || '—' }}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Hudud / Filial</span>
+              <span style="font-weight: 600; color: var(--text-primary);">{{ detailAsset.org || '—' }}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Qavat va Xona</span>
+              <span style="font-weight: 600; color: var(--text-primary);">{{ detailAsset.floor || '—' }} / {{ detailAsset.room || '—' }}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Mas'ul Xodim</span>
+              <span style="font-weight: 600; color: var(--text-primary);">{{ detailAsset.owner || '—' }}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Sotib Olingan Sana</span>
+              <span style="font-weight: 600; color: var(--text-primary);">{{ detailAsset.date || '—' }}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Narxi</span>
+              <span style="font-weight: 700; color: var(--text-primary); font-family: monospace;">{{ new Intl.NumberFormat('uz-UZ').format(detailAsset.price || 0) }} UZS</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Mavjudlik Holati</span>
+              <span style="font-weight: 600; display: flex; align-items: center; gap: 0.25rem;" :style="{ color: detailAsset.verificationStatus === 'confirmed' ? 'var(--success)' : 'var(--text-secondary)' }">
+                <svg v-if="detailAsset.verificationStatus === 'confirmed'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="12" height="12"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>{{ detailAsset.verificationStatus === 'confirmed' ? `Tasdiqlangan (${detailAsset.lastVerified})` : 'Tasdiqlanmagan' }}</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Izohlar -->
+          <div style="display: flex; flex-direction: column; gap: 0.35rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 0.75rem; border-radius: var(--radius-md);">
+            <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Qo'shimcha izoh / Ma'lumot</span>
+            <p style="margin: 0; font-size: 0.85rem; line-height: 1.45; color: var(--text-primary); white-space: pre-wrap;">{{ detailAsset.notes || 'Izoh yozilmagan.' }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 1rem 1.25rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+        <button type="button" @click="isDetailsModalOpen = false" class="btn btn-secondary">Yopish</button>
       </div>
     </div>
   </div>
