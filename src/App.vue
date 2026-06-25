@@ -354,6 +354,145 @@ watch(locations, () => {
   rebuildLocationsFromAssets();
 }, { deep: true });
 
+// ==========================================================================
+// TIZIM LOGLARI (ACTIVITY LOGGING & SYSTEM HISTORY)
+// ==========================================================================
+const fetchUserIp = async () => {
+  try {
+    const res = await fetch("https://api.ipify.org?format=json");
+    const data = await res.json();
+    currentUserIp.value = data.ip;
+  } catch (e) {
+    currentUserIp.value = "Aniqlab bo'lmadi";
+  }
+};
+
+const getDeviceDetails = () => {
+  const ua = navigator.userAgent;
+  let os = "Noma'lum OS";
+  if (ua.indexOf("Win") !== -1) os = "Windows";
+  else if (ua.indexOf("Mac") !== -1) os = "macOS";
+  else if (ua.indexOf("Linux") !== -1) os = "Linux";
+  else if (ua.indexOf("Android") !== -1) os = "Android";
+  else if (ua.indexOf("like Mac") !== -1) os = "iOS";
+
+  let browser = "Noma'lum Brauzer";
+  if (ua.indexOf("Chrome") !== -1) browser = "Chrome";
+  else if (ua.indexOf("Safari") !== -1) browser = "Safari";
+  else if (ua.indexOf("Firefox") !== -1) browser = "Firefox";
+  else if (ua.indexOf("Edge") !== -1) browser = "Edge";
+
+  return `${os} (${browser})`;
+};
+
+const addActivityLog = (action) => {
+  const userEmail = currentUser.value ? currentUser.value.email : "Oflayn/Mehmon";
+  const timestamp = new Date().toISOString();
+  const device = getDeviceDetails();
+  const ip = currentUserIp.value;
+
+  const logEntry = {
+    id: "log_" + Math.random().toString(36).substr(2, 9),
+    user: userEmail,
+    action: action,
+    timestamp: timestamp,
+    ip: ip,
+    device: device
+  };
+
+  if (isOnlineMode.value && db.value) {
+    db.value.collection("activity_logs").doc(logEntry.id).set(logEntry)
+      .catch(err => console.error("Error writing activity log to Firestore:", err));
+  } else {
+    const localLogs = localStorage.getItem("inv_activity_logs");
+    let logsList = [];
+    try {
+      logsList = JSON.parse(localLogs) || [];
+    } catch (e) {
+      logsList = [];
+    }
+    logsList.unshift(logEntry);
+    if (logsList.length > 100) {
+      logsList = logsList.slice(0, 100);
+    }
+    localStorage.setItem("inv_activity_logs", JSON.stringify(logsList));
+    activityLogs.value = logsList;
+  }
+};
+
+let unsubscribeLogs = null;
+const syncActivityLogs = () => {
+  if (isOnlineMode.value && db.value) {
+    if (unsubscribeLogs) unsubscribeLogs();
+    unsubscribeLogs = db.value.collection("activity_logs")
+      .orderBy("timestamp", "desc")
+      .limit(100)
+      .onSnapshot((snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        activityLogs.value = list;
+      }, err => {
+        console.error("Error syncing activity logs:", err);
+      });
+  } else {
+    const localLogs = localStorage.getItem("inv_activity_logs");
+    try {
+      activityLogs.value = JSON.parse(localLogs) || [];
+    } catch (e) {
+      activityLogs.value = [];
+    }
+  }
+};
+
+const clearActivityLogs = () => {
+  if (currentUserRole.value !== "admin") return;
+  if (!confirm("Barcha tizim loglarini o'chirib yubormoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.")) return;
+
+  if (isOnlineMode.value && db.value) {
+    const batch = db.value.batch();
+    db.value.collection("activity_logs").get().then((snapshot) => {
+      snapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      batch.commit().then(() => {
+        alert("Barcha loglar muvaffaqiyatli tozalandi!");
+        addActivityLog("Tizim loglari tozalab yuborildi");
+      }).catch(err => alert("Xatolik: " + err.message));
+    });
+  } else {
+    localStorage.removeItem("inv_activity_logs");
+    activityLogs.value = [];
+    alert("Barcha oflayn loglar tozalandi!");
+  }
+};
+
+const formatLogTime = (isoString) => {
+  if (!isoString) return "—";
+  try {
+    const d = new Date(isoString);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
+  } catch (e) {
+    return isoString;
+  }
+};
+
+const filteredLogs = computed(() => {
+  const query = logSearchQuery.value.trim().toLowerCase();
+  if (!query) return activityLogs.value;
+  return activityLogs.value.filter(log => {
+    return (log.user || "").toLowerCase().includes(query) ||
+           (log.action || "").toLowerCase().includes(query) ||
+           (log.ip || "").toLowerCase().includes(query) ||
+           (log.device || "").toLowerCase().includes(query);
+  });
+});
+
 // Sidebar va Mavzu holatlari
 const theme = ref("light");
 const isSidebarCollapsed = ref(false);
@@ -389,6 +528,10 @@ const isForgotPasswordModalOpen = ref(false);
 const isPrivacyModalOpen = ref(false);
 const isAdminUsersModalOpen = ref(false);
 const isTopbarMenuOpen = ref(false);
+const isAdminLogsModalOpen = ref(false);
+const logSearchQuery = ref("");
+const currentUserIp = ref("Yuklanmoqda...");
+const activityLogs = ref([]);
 
 const privacyModalTitle = ref("Maxfiylik Siyosati");
 
@@ -860,6 +1003,7 @@ const loadDatabase = () => {
       assetsLoaded = true;
       checkLoadingState();
     });
+    syncActivityLogs();
   } else {
     // Oflayn LocalStorage rejimi:
     const localLocs = localStorage.getItem("inv_locations");
@@ -887,6 +1031,7 @@ const loadDatabase = () => {
     setTimeout(() => {
       isAssetsLoading.value = false;
     }, 300);
+    syncActivityLogs();
   }
 };
 
@@ -1007,6 +1152,7 @@ const saveAsset = () => {
     }
     db.value.collection("assets").doc(newAsset.id).set(newAsset)
       .then(() => {
+        addActivityLog(assetForm.action === "ADD" ? `Yangi jihoz qo'shildi: ${newAsset.name} (ID: ${newAsset.id})` : `Jihoz tahrirlandi: ${newAsset.name} (ID: ${newAsset.id})`);
         isAssetModalOpen.value = false;
       })
       .catch(err => alert("Firestore xatoligi: " + err.message));
@@ -1020,6 +1166,7 @@ const saveAsset = () => {
         assets.value[idx] = newAsset;
       }
     }
+    addActivityLog(assetForm.action === "ADD" ? `Yangi jihoz qo'shildi: ${newAsset.name} (ID: ${newAsset.id})` : `Jihoz tahrirlandi: ${newAsset.name} (ID: ${newAsset.id})`);
     saveAssetsToLocal();
     isAssetModalOpen.value = false;
   }
@@ -1033,9 +1180,13 @@ const deleteAsset = (assetId) => {
 
   if (isOnlineMode.value && db.value) {
     db.value.collection("assets").doc(assetId).delete()
+      .then(() => {
+        addActivityLog(`Jihoz o'chirildi: ID ${assetId}`);
+      })
       .catch(err => alert("O'chirishda xatolik yuz berdi: " + err.message));
   } else {
     assets.value = assets.value.filter(a => a.id !== assetId);
+    addActivityLog(`Jihoz o'chirildi: ID ${assetId}`);
     saveAssetsToLocal();
   }
 };
@@ -1065,6 +1216,7 @@ const saveLocation = () => {
       name: name,
       floors: []
     });
+    addActivityLog(`Yangi tashkilot qo'shildi: ${name}`);
   } else if (locationForm.type === "FLOOR") {
     const org = locations.value.find(o => o.name === locationForm.parentOrg);
     if (!org) return;
@@ -1077,6 +1229,7 @@ const saveLocation = () => {
       name: name,
       rooms: []
     });
+    addActivityLog(`Yangi qavat qo'shildi: ${name} (Tashkilot: ${locationForm.parentOrg})`);
     
     // Yangi qavat qo'shilganda tashkilot panelini avtomatik yoyib ko'rsatish
     expandedNodes.orgs[org.id] = true;
@@ -1091,6 +1244,7 @@ const saveLocation = () => {
     if (exists) { return alert("Ushbu xona allaqachon mavjud!"); }
 
     floor.rooms.push(name);
+    addActivityLog(`Yangi xona qo'shildi: ${name} (Tashkilot: ${locationForm.parentOrg}, Qavat: ${locationForm.parentFloor})`);
     
     // Yangi xona qo'shilganda qavat panelini avtomatik yoyib ko'rsatish
     expandedNodes.floors[floor.id] = true;
@@ -1112,6 +1266,7 @@ const deleteOrg = (org) => {
     return;
   }
   locations.value = locations.value.filter(o => o.id !== org.id);
+  addActivityLog(`Tashkilot o'chirildi: ${org.name}`);
   saveLocationsToLocal();
   if (selectedLocation.type === 'ORG' && selectedLocation.org === org.name) {
     selectLoc('GLOBAL');
@@ -1131,6 +1286,7 @@ const deleteFloor = (org, floor) => {
   const orgObj = locations.value.find(o => o.id === org.id);
   if (orgObj && orgObj.floors) {
     orgObj.floors = orgObj.floors.filter(f => f.id !== floor.id);
+    addActivityLog(`Qavat o'chirildi: ${floor.name} (Tashkilot: ${org.name})`);
     saveLocationsToLocal();
   }
   if (selectedLocation.type === 'FLOOR' && selectedLocation.org === org.name && selectedLocation.floor === floor.name) {
@@ -1153,6 +1309,7 @@ const deleteRoom = (org, floor, roomName) => {
     const floorObj = orgObj.floors.find(f => f.id === floor.id);
     if (floorObj && floorObj.rooms) {
       floorObj.rooms = floorObj.rooms.filter(r => r !== roomName);
+      addActivityLog(`Xona o'chirildi: ${roomName} (Tashkilot: ${org.name}, Qavat: ${floor.name})`);
       saveLocationsToLocal();
     }
   }
@@ -1170,6 +1327,7 @@ const exportExcel = () => {
     alert("Hozirgi joylashuvda eksport qilish uchun hech qanday jihoz yo'q!");
     return;
   }
+  addActivityLog(`Ma'lumotlar Excelga eksport qilindi (Jihozlar soni: ${listToExport.length})`);
 
   // Jihozlarni xonalar bo'yicha guruhlash
   const assetsByRoom = {};
@@ -1418,6 +1576,7 @@ const handleExcelImportFile = (file) => {
             return Promise.all(writePromises);
           })
           .then(() => {
+            addActivityLog(`Exceldan ma'lumotlar import qilindi (Jihozlar soni: ${importedAssets.length})`);
             alert(`Muvaffaqiyatli bulutga yuklandi!\nJami ${importedAssets.length} ta jihoz Firestore-ga tiklandi.`);
           })
           .catch(err => alert("Bulutga yozishda xatolik: " + err.message));
@@ -1426,6 +1585,7 @@ const handleExcelImportFile = (file) => {
         assets.value = importedAssets;
         saveAssetsToLocal();
         selectLoc("GLOBAL");
+        addActivityLog(`Exceldan ma'lumotlar import qilindi (Jihozlar soni: ${importedAssets.length})`);
         alert(`Muvaffaqiyatli tiklandi!\nJami ${importedAssets.length} ta jihoz yuklandi.`);
       }
 
@@ -1644,6 +1804,9 @@ const submitAuth = () => {
 
   if (authForm.mode === "LOGIN") {
     firebase.auth().signInWithEmailAndPassword(email, password)
+      .then(() => {
+        addActivityLog("Tizimga kirdi (Login)");
+      })
       .catch(err => alert("Kirishda xatolik: " + err.message));
   } else {
     if (password !== authForm.confirmPassword) {
@@ -1656,7 +1819,10 @@ const submitAuth = () => {
           uid: cred.user.uid,
           email: cred.user.email,
           role: "admin"
-        }).then(() => alert(`Muvaffaqiyatli ro'yxatdan o'tdingiz!\nRolingiz: ADMIN`));
+        }).then(() => {
+          addActivityLog("Yangi hisob yaratdi (Ro'yxatdan o'tdi)");
+          alert(`Muvaffaqiyatli ro'yxatdan o'tdingiz!\nRolingiz: ADMIN`);
+        });
       })
       .catch(err => alert("Ro'yxatdan o'tishda xatolik: " + err.message));
   }
@@ -1664,6 +1830,7 @@ const submitAuth = () => {
 
 const handleLogout = () => {
   if (isOnlineMode.value) {
+    addActivityLog("Tizimdan chiqdi (Logout)");
     firebase.auth().signOut().then(() => alert("Tizimdan chiqdingiz!"));
   }
 };
@@ -1742,6 +1909,7 @@ onMounted(() => {
   const savedSidebar = localStorage.getItem("inv_sidebar_collapsed");
   isSidebarCollapsed.value = savedSidebar === "true";
 
+  fetchUserIp();
   parseShareUrl();
   initFirebase();
   loadDatabase();
@@ -1981,6 +2149,27 @@ onMounted(() => {
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
           <span class="theme-btn-text">Bulut Sozlamalari</span>
+        </button>
+
+        <button v-if="currentUserRole === 'admin'" @click="openAdminUsersModal" id="sidebarUsersBtn" class="btn btn-secondary btn-icon sidebar-theme-btn" style="margin-bottom: 0.5rem; justify-content: flex-start; width: 100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span class="theme-btn-text">Xodimlar Boshqaruvi</span>
+        </button>
+
+        <button v-if="currentUserRole === 'admin'" @click="isAdminLogsModalOpen = true" id="sidebarLogsBtn" class="btn btn-secondary btn-icon sidebar-theme-btn" style="margin-bottom: 0.5rem; justify-content: flex-start; width: 100%;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span class="theme-btn-text">Tizim Loglari</span>
         </button>
 
         <button @click="toggleTheme" id="themeToggleBtn" class="btn btn-secondary btn-icon sidebar-theme-btn" style="width: 100%;">
@@ -2920,6 +3109,53 @@ onMounted(() => {
       </div>
       <div class="modal-footer">
         <button type="button" @click="isAdminUsersModalOpen = false" class="btn btn-secondary">Yopish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL OYNA: TIZIM LOGLARI (ADMIN SYSTEM LOGS) -->
+  <div class="modal-overlay" :class="{ open: isAdminLogsModalOpen }" role="dialog" aria-modal="true">
+    <div class="modal-content" style="max-width: 900px; width: 90%;">
+      <div class="modal-header">
+        <h3 class="modal-title">📋 Tizim Loglari (Oxirgi 100 ta amal)</h3>
+        <button type="button" class="close-btn" @click="isAdminLogsModalOpen = false">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem 0;">
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; padding: 0 1.5rem;">
+          <input type="text" v-model="logSearchQuery" placeholder="Foydalanuvchi, amal yoki IP bo'yicha qidirish..." style="flex: 1; padding: 0.55rem; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.85rem;">
+          <button v-if="activityLogs.length > 0" type="button" @click="clearActivityLogs" class="btn btn-secondary" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3); padding: 0.55rem 1rem; font-size: 0.85rem;">
+            Loglarni tozalash
+          </button>
+        </div>
+        
+        <div class="table-container" style="max-height: 450px; overflow-y: auto; padding: 0 1.5rem;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem; min-width: 700px;">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-weight: bold;">
+                <th style="padding: 0.5rem 0.25rem;">Sana va vaqt</th>
+                <th style="padding: 0.5rem 0.25rem;">Foydalanuvchi</th>
+                <th style="padding: 0.5rem 0.25rem;">Bajarilgan Amal</th>
+                <th style="padding: 0.5rem 0.25rem;">IP Manzil</th>
+                <th style="padding: 0.5rem 0.25rem;">Qurilma / OS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="filteredLogs.length === 0">
+                <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">Loglar topilmadi.</td>
+              </tr>
+              <tr v-for="log in filteredLogs" :key="log.id" style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 0.55rem 0.25rem; font-family: monospace; white-space: nowrap;">{{ formatLogTime(log.timestamp) }}</td>
+                <td style="padding: 0.55rem 0.25rem; font-weight: 600; color: var(--accent);">{{ log.user }}</td>
+                <td style="padding: 0.55rem 0.25rem; word-break: break-word;">{{ log.action }}</td>
+                <td style="padding: 0.55rem 0.25rem; font-family: monospace;">{{ log.ip || '—' }}</td>
+                <td style="padding: 0.55rem 0.25rem; font-size: 0.72rem; color: var(--text-secondary);">{{ log.device }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" @click="isAdminLogsModalOpen = false" class="btn btn-secondary">Yopish</button>
       </div>
     </div>
   </div>
