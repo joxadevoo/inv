@@ -281,6 +281,64 @@ const resetAssetVerification = (asset) => {
   }
 };
 
+const rebuildLocationsFromAssets = () => {
+  if (!assets.value || assets.value.length === 0) return;
+  let changed = false;
+  
+  // Clone current locations to avoid direct mutation issues
+  const currentLocs = JSON.parse(JSON.stringify(locations.value || []));
+
+  assets.value.forEach(asset => {
+    const orgName = (asset.org || "").toString().trim();
+    const floorName = (asset.floor || "").toString().trim();
+    const roomName = (asset.room || "").toString().trim();
+
+    if (!orgName || orgName === "—") return;
+
+    // 1. Find or create Organization
+    let org = currentLocs.find(o => o.name.toLowerCase() === orgName.toLowerCase());
+    if (!org) {
+      org = {
+        id: "org_" + Math.random().toString(36).substr(2, 9),
+        name: orgName,
+        floors: []
+      };
+      currentLocs.push(org);
+      changed = true;
+    }
+
+    if (!floorName || floorName === "—") return;
+
+    // 2. Find or create Floor
+    if (!org.floors) org.floors = [];
+    let floor = org.floors.find(f => f.name.toLowerCase() === floorName.toLowerCase());
+    if (!floor) {
+      floor = {
+        id: "floor_" + Math.random().toString(36).substr(2, 9),
+        name: floorName,
+        rooms: []
+      };
+      org.floors.push(floor);
+      changed = true;
+    }
+
+    if (!roomName || roomName === "—") return;
+
+    // 3. Find or create Room
+    if (!floor.rooms) floor.rooms = [];
+    let roomExists = floor.rooms.some(r => r.toLowerCase() === roomName.toLowerCase());
+    if (!roomExists) {
+      floor.rooms.push(roomName);
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    locations.value = currentLocs;
+    saveLocationsToLocal();
+  }
+};
+
 watch(assets, (newAssets) => {
   if (isSharedView.value && newAssets && newAssets.length > 0) {
     newAssets.forEach(a => {
@@ -289,7 +347,12 @@ watch(assets, (newAssets) => {
       }
     });
   }
-}, { immediate: true });
+  rebuildLocationsFromAssets();
+}, { immediate: true, deep: true });
+
+watch(locations, () => {
+  rebuildLocationsFromAssets();
+}, { deep: true });
 
 // Sidebar va Mavzu holatlari
 const theme = ref("light");
