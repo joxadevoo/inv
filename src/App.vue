@@ -1037,6 +1037,67 @@ const saveLocation = () => {
   isLocationModalOpen.value = false;
 };
 
+// Joylashuvlarni (tashkilot, qavat, xona) o'chirish funksiyalari
+const deleteOrg = (org) => {
+  if (currentUserRole.value !== "admin") return;
+  const assetCount = getOrgAssetCount(org.name);
+  if (assetCount > 0) {
+    alert(`Ushbu tashkilotda ${assetCount} ta faol jihoz mavjud! O'chirishdan oldin ularni boshqa joyga ko'chiring yoki o'chiring.`);
+    return;
+  }
+  if (!confirm(`"${org.name}" tashkilotini (va undagi barcha qavat hamda xonalarni) o'chirishni xohlaysizmi?`)) {
+    return;
+  }
+  locations.value = locations.value.filter(o => o.id !== org.id);
+  saveLocationsToLocal();
+  if (selectedLocation.type === 'ORG' && selectedLocation.org === org.name) {
+    selectLoc('GLOBAL');
+  }
+};
+
+const deleteFloor = (org, floor) => {
+  if (currentUserRole.value !== "admin") return;
+  const assetCount = getFloorAssetCount(org.name, floor.name);
+  if (assetCount > 0) {
+    alert(`Ushbu qavatda ${assetCount} ta faol jihoz mavjud! O'chirishdan oldin ularni boshqa joyga ko'chiring yoki o'chiring.`);
+    return;
+  }
+  if (!confirm(`"${org.name}" tarkibidagi "${floor.name}" qavatini o'chirishni xohlaysizmi?`)) {
+    return;
+  }
+  const orgObj = locations.value.find(o => o.id === org.id);
+  if (orgObj && orgObj.floors) {
+    orgObj.floors = orgObj.floors.filter(f => f.id !== floor.id);
+    saveLocationsToLocal();
+  }
+  if (selectedLocation.type === 'FLOOR' && selectedLocation.org === org.name && selectedLocation.floor === floor.name) {
+    selectLoc('GLOBAL');
+  }
+};
+
+const deleteRoom = (org, floor, roomName) => {
+  if (currentUserRole.value !== "admin") return;
+  const assetCount = getRoomAssetCount(org.name, floor.name, roomName);
+  if (assetCount > 0) {
+    alert(`Ushbu xonada ${assetCount} ta faol jihoz mavjud! O'chirishdan oldin ularni boshqa joyga ko'chiring yoki o'chiring.`);
+    return;
+  }
+  if (!confirm(`"${org.name}" -> "${floor.name}" tarkibidagi "${roomName}" xonasini o'chirishni xohlaysizmi?`)) {
+    return;
+  }
+  const orgObj = locations.value.find(o => o.id === org.id);
+  if (orgObj && orgObj.floors) {
+    const floorObj = orgObj.floors.find(f => f.id === floor.id);
+    if (floorObj && floorObj.rooms) {
+      floorObj.rooms = floorObj.rooms.filter(r => r !== roomName);
+      saveLocationsToLocal();
+    }
+  }
+  if (selectedLocation.type === 'ROOM' && selectedLocation.org === org.name && selectedLocation.floor === floor.name && selectedLocation.room === roomName) {
+    selectLoc('GLOBAL');
+  }
+};
+
 // ==========================================================================
 // 9. EXCEL IMPORT VA EKSPORT INTEGRATSIYASI
 // ==========================================================================
@@ -1787,7 +1848,14 @@ onMounted(() => {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" class="tree-icon" style="color: var(--accent);"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
               <span class="tree-text" style="font-weight: 600;">{{ org.name }}</span>
               <span class="tree-count-badge">{{ getOrgAssetCount(org.name) }}</span>
-              <button v-if="currentUserRole === 'admin'" @click.stop="openAddLocationModal('FLOOR', org.name)" class="add-sub-btn" title="Qavat qo'shish">+</button>
+              <div v-if="currentUserRole === 'admin'" class="node-actions">
+                <button @click.stop="openAddLocationModal('FLOOR', org.name)" class="action-icon-small" title="Qavat qo'shish">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+                <button @click.stop="deleteOrg(org)" class="action-icon-small action-icon-danger" title="Tashkilotni o'chirish">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </button>
+              </div>
             </div>
             
             <!-- Qavatlar ro'yxati -->
@@ -1800,7 +1868,14 @@ onMounted(() => {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" class="tree-icon" style="color: var(--success);"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                   <span class="tree-text">{{ formatFloorDisplay(floor.name) }}</span>
                   <span class="tree-count-badge">{{ getFloorAssetCount(org.name, floor.name) }}</span>
-                  <button v-if="currentUserRole === 'admin'" @click.stop="openAddLocationModal('ROOM', org.name, floor.name)" class="add-sub-btn" title="Xona qo'shish">+</button>
+                  <div v-if="currentUserRole === 'admin'" class="node-actions">
+                    <button @click.stop="openAddLocationModal('ROOM', org.name, floor.name)" class="action-icon-small" title="Xona qo'shish">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                    <button @click.stop="deleteFloor(org, floor)" class="action-icon-small action-icon-danger" title="Qavatni o'chirish">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    </button>
+                  </div>
                 </div>
                 
                 <!-- Xonalar ro'yxati -->
@@ -1809,6 +1884,11 @@ onMounted(() => {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" class="tree-icon" style="color: var(--warning);"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
                     <span class="tree-text">{{ room }}</span>
                     <span class="tree-count-badge">{{ getRoomAssetCount(org.name, floor.name, room) }}</span>
+                    <div v-if="currentUserRole === 'admin'" class="node-actions">
+                      <button @click.stop="deleteRoom(org, floor, room)" class="action-icon-small action-icon-danger" title="Xonani o'chirish">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2904,6 +2984,11 @@ onMounted(() => {
   content: ' ▼';
   opacity: 0.8;
   color: var(--accent);
+}
+
+.action-icon-danger:hover {
+  color: var(--danger) !important;
+  background-color: var(--danger-light) !important;
 }
 
 /* CSS stiker maxsus chop etish override rules */
