@@ -2986,6 +2986,26 @@ onMounted(() => {
   color: var(--accent);
 }
 
+.node-actions {
+  align-items: center;
+}
+
+.action-icon-small {
+  border-radius: 50% !important;
+  width: 22px;
+  height: 22px;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.action-icon-small:hover {
+  color: var(--accent) !important;
+  background-color: var(--accent-light) !important;
+}
+
 .action-icon-danger:hover {
   color: var(--danger) !important;
   background-color: var(--danger-light) !important;
