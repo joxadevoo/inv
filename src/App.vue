@@ -3107,12 +3107,12 @@ onMounted(() => {
 
   <!-- MODAL OYNA: TIZIM LOGLARI (ADMIN SYSTEM LOGS) -->
   <div class="modal-overlay" :class="{ open: isAdminLogsModalOpen }" role="dialog" aria-modal="true">
-    <div class="modal-content" style="max-width: 900px; width: 90%;">
+    <div class="modal-card" style="max-width: 950px; width: 95%;">
       <div class="modal-header">
         <h3 class="modal-title">📋 Tizim Loglari (Oxirgi 100 ta amal)</h3>
         <button type="button" class="close-btn" @click="isAdminLogsModalOpen = false">&times;</button>
       </div>
-      <div class="modal-body" style="padding: 1.5rem 0;">
+      <div class="modal-body" style="padding: 1.5rem 0; overflow-y: auto;">
         <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; padding: 0 1.5rem;">
           <input type="text" v-model="logSearchQuery" placeholder="Foydalanuvchi, amal yoki IP bo'yicha qidirish..." style="flex: 1; padding: 0.55rem; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.85rem;">
           <button v-if="activityLogs.length > 0" type="button" @click="clearActivityLogs" class="btn btn-secondary" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3); padding: 0.55rem 1rem; font-size: 0.85rem;">
@@ -3120,27 +3120,27 @@ onMounted(() => {
           </button>
         </div>
         
-        <div class="table-container" style="max-height: 450px; overflow-y: auto; padding: 0 1.5rem;">
-          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem; min-width: 700px;">
+        <div class="table-container" style="max-height: 50vh; overflow-y: auto; padding: 0 1.5rem;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem; min-width: 750px;">
             <thead>
-              <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-weight: bold;">
-                <th style="padding: 0.5rem 0.25rem;">Sana va vaqt</th>
-                <th style="padding: 0.5rem 0.25rem;">Foydalanuvchi</th>
-                <th style="padding: 0.5rem 0.25rem;">Bajarilgan Amal</th>
-                <th style="padding: 0.5rem 0.25rem;">IP Manzil</th>
-                <th style="padding: 0.5rem 0.25rem;">Qurilma / OS</th>
+              <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-primary); font-weight: bold; background-color: var(--bg-sidebar);">
+                <th style="padding: 0.75rem 0.5rem; border-radius: var(--radius-sm) 0 0 var(--radius-sm);">Sana va vaqt</th>
+                <th style="padding: 0.75rem 0.5rem;">Foydalanuvchi</th>
+                <th style="padding: 0.75rem 0.5rem;">Bajarilgan Amal</th>
+                <th style="padding: 0.75rem 0.5rem;">IP Manzil</th>
+                <th style="padding: 0.75rem 0.5rem; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">Qurilma / OS</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="filteredLogs.length === 0">
-                <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">Loglar topilmadi.</td>
+                <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-secondary); background: transparent;">Loglar topilmadi.</td>
               </tr>
-              <tr v-for="log in filteredLogs" :key="log.id" style="border-bottom: 1px solid var(--border-color);">
-                <td style="padding: 0.55rem 0.25rem; font-family: monospace; white-space: nowrap;">{{ formatLogTime(log.timestamp) }}</td>
-                <td style="padding: 0.55rem 0.25rem; font-weight: 600; color: var(--accent);">{{ log.user }}</td>
-                <td style="padding: 0.55rem 0.25rem; word-break: break-word;">{{ log.action }}</td>
-                <td style="padding: 0.55rem 0.25rem; font-family: monospace;">{{ log.ip || '—' }}</td>
-                <td style="padding: 0.55rem 0.25rem; font-size: 0.72rem; color: var(--text-secondary);">{{ log.device }}</td>
+              <tr v-for="log in filteredLogs" :key="log.id" class="log-row">
+                <td style="padding: 0.65rem 0.5rem; font-family: monospace; white-space: nowrap; color: var(--text-secondary);">{{ formatLogTime(log.timestamp) }}</td>
+                <td style="padding: 0.65rem 0.5rem; font-weight: 600; color: var(--accent);">{{ log.user }}</td>
+                <td style="padding: 0.65rem 0.5rem; word-break: break-word; color: var(--text-primary);">{{ log.action }}</td>
+                <td style="padding: 0.65rem 0.5rem; font-family: monospace; color: var(--text-primary);">{{ log.ip || '—' }}</td>
+                <td style="padding: 0.65rem 0.5rem; font-size: 0.72rem; color: var(--text-secondary);">{{ log.device }}</td>
               </tr>
             </tbody>
           </table>
@@ -3300,6 +3300,16 @@ onMounted(() => {
 .action-icon-danger:hover {
   color: var(--danger) !important;
   background-color: var(--danger-light) !important;
+}
+
+.log-row {
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: background-color 0.2s ease;
+}
+
+.log-row:hover {
+  background-color: var(--accent-light);
 }
 
 /* CSS stiker maxsus chop etish override rules */
