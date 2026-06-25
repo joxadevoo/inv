@@ -2151,15 +2151,7 @@ onMounted(() => {
           <span class="theme-btn-text">Bulut Sozlamalari</span>
         </button>
 
-        <button v-if="currentUserRole === 'admin'" @click="openAdminUsersModal" id="sidebarUsersBtn" class="btn btn-secondary btn-icon sidebar-theme-btn" style="margin-bottom: 0.5rem; justify-content: flex-start; width: 100%;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-          <span class="theme-btn-text">Xodimlar Boshqaruvi</span>
-        </button>
+
 
         <button v-if="currentUserRole === 'admin'" @click="isAdminLogsModalOpen = true" id="sidebarLogsBtn" class="btn btn-secondary btn-icon sidebar-theme-btn" style="margin-bottom: 0.5rem; justify-content: flex-start; width: 100%;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
