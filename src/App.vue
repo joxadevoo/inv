@@ -1881,7 +1881,7 @@ onMounted(() => {
                 <!-- Xonalar ro'yxati -->
                 <div v-if="expandedNodes.floors[floor.id]" class="rooms-wrapper" style="padding-left: 1.15rem; margin-top: 0.2rem;">
                   <div v-for="room in floor.rooms" :key="room" class="location-tree-item room-item" :class="{ active: selectedLocation.type === 'ROOM' && selectedLocation.org === org.name && selectedLocation.floor === floor.name && selectedLocation.room === room }" @click="selectLoc('ROOM', org.name, floor.name, room)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" class="tree-icon" style="color: var(--warning);"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" class="tree-icon" :style="{ color: getRoomAssetCount(org.name, floor.name, room) > 0 ? 'var(--success)' : 'var(--danger)' }"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
                     <span class="tree-text">{{ room }}</span>
                     <span class="tree-count-badge">{{ getRoomAssetCount(org.name, floor.name, room) }}</span>
                     <div v-if="currentUserRole === 'admin'" class="node-actions">
