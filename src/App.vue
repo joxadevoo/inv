@@ -676,21 +676,30 @@ const getGlobalAssetCount = () => {
 };
 
 const getOrgAssetCount = (orgIdOrName) => {
-  return assets.value.filter(a => a.orgId === orgIdOrName || a.org === orgIdOrName).length;
+  const name = locationNameMap.value[orgIdOrName] || orgIdOrName;
+  return assets.value.filter(a => 
+    a.orgId === orgIdOrName || 
+    (a.org && a.org.toString().toLowerCase().trim() === name.toString().toLowerCase().trim())
+  ).length;
 };
 
 const getFloorAssetCount = (orgIdOrName, floorIdOrName) => {
+  const orgName = locationNameMap.value[orgIdOrName] || orgIdOrName;
+  const floorName = locationNameMap.value[floorIdOrName] || floorIdOrName;
   return assets.value.filter(a => 
-    (a.orgId === orgIdOrName || a.org === orgIdOrName) && 
-    (a.floorId === floorIdOrName || a.floor === floorIdOrName)
+    (a.orgId === orgIdOrName || (a.org && a.org.toString().toLowerCase().trim() === orgName.toString().toLowerCase().trim())) && 
+    (a.floorId === floorIdOrName || (a.floor && a.floor.toString().toLowerCase().trim() === floorName.toString().toLowerCase().trim()))
   ).length;
 };
 
 const getRoomAssetCount = (orgIdOrName, floorIdOrName, roomIdOrName) => {
+  const orgName = locationNameMap.value[orgIdOrName] || orgIdOrName;
+  const floorName = locationNameMap.value[floorIdOrName] || floorIdOrName;
+  const roomName = locationNameMap.value[roomIdOrName] || roomIdOrName;
   return assets.value.filter(a => 
-    (a.orgId === orgIdOrName || a.org === orgIdOrName) && 
-    (a.floorId === floorIdOrName || a.floor === floorIdOrName) && 
-    (a.roomId === roomIdOrName || a.room === roomIdOrName)
+    (a.orgId === orgIdOrName || (a.org && a.org.toString().toLowerCase().trim() === orgName.toString().toLowerCase().trim())) && 
+    (a.floorId === floorIdOrName || (a.floor && a.floor.toString().toLowerCase().trim() === floorName.toString().toLowerCase().trim())) && 
+    (a.roomId === roomIdOrName || (a.room && a.room.toString().toLowerCase().trim() === roomName.toString().toLowerCase().trim()))
   ).length;
 };
 
@@ -967,14 +976,29 @@ const fixRoomAssetNumbers = async () => {
         roomId: selectedLocation.roomId
       };
 
-      if (asset.id !== newId) {
-        await db.value.collection("assets").doc(newId).set(updatedAsset);
-        await db.value.collection("assets").doc(asset.id).delete();
+      if (isOnlineMode.value && db.value) {
+        if (asset.id !== newId) {
+          await db.value.collection("assets").doc(newId).set(updatedAsset);
+          await db.value.collection("assets").doc(asset.id).delete();
+        } else {
+          await db.value.collection("assets").doc(asset.id).set(updatedAsset);
+        }
       } else {
-        // Hatto ID o'zgarmagan bo'lsa ham, orgId/floorId/roomId yozib qo'yamiz
-        await db.value.collection("assets").doc(asset.id).set(updatedAsset);
+        const idx = assets.value.findIndex(a => a.id === asset.id);
+        if (idx !== -1) {
+          if (asset.id !== newId) {
+            assets.value = assets.value.filter(a => a.id !== asset.id);
+            assets.value.push(updatedAsset);
+          } else {
+            assets.value[idx] = updatedAsset;
+          }
+        }
       }
       serial++;
+    }
+
+    if (!isOnlineMode.value) {
+      saveAssetsToLocal();
     }
     
     alert("Jihozlarning inventar raqamlari muvaffaqiyatli tartiblandi!");
@@ -1249,10 +1273,24 @@ const ensureLocationsStructureAndIds = (data) => {
   return data;
 };
 
-const migrateAssetsData = () => {
+let isMigrationRunning = false;
+let isMigrationDone = false;
+
+const migrateAssetsData = async () => {
+  if (isMigrationRunning || isMigrationDone) return;
   if (!locations.value.length || !assets.value.length) return;
   
+  isMigrationRunning = true;
+  
   let migratedCount = 0;
+  const useBatch = isOnlineMode.value && db.value;
+  let batch = null;
+  if (useBatch) {
+    batch = db.value.batch();
+  }
+  
+  const localMigratedAssets = [...assets.value];
+  let localChanged = false;
   
   assets.value.forEach((asset) => {
     if (asset.roomId) return;
@@ -1271,23 +1309,175 @@ const migrateAssetsData = () => {
       
       migratedCount++;
       
-      if (isOnlineMode.value && db.value) {
-        db.value.collection("assets").doc(asset.id).set(updatedAsset)
-          .catch(err => console.error("Asset auto-migration error:", err));
+      if (useBatch) {
+        const docRef = db.value.collection("assets").doc(asset.id);
+        batch.set(docRef, updatedAsset);
       } else {
-        const idx = assets.value.findIndex(a => a.id === asset.id);
+        const idx = localMigratedAssets.findIndex(a => a.id === asset.id);
         if (idx !== -1) {
-          assets.value[idx] = updatedAsset;
+          localMigratedAssets[idx] = updatedAsset;
+          localChanged = true;
         }
       }
     }
   });
   
   if (migratedCount > 0) {
-    console.log(`Auto-migrated ${migratedCount} assets to use unique location IDs.`);
-    if (!isOnlineMode.value) {
+    console.log(`Auto-migrating ${migratedCount} assets to use unique location IDs...`);
+    if (useBatch) {
+      try {
+        await batch.commit();
+        console.log(`Successfully committed Firestore batch migration of ${migratedCount} assets.`);
+      } catch (err) {
+        console.error("Firestore batch migration error:", err);
+      }
+    } else if (localChanged) {
+      assets.value = localMigratedAssets;
       saveAssetsToLocal();
     }
+  }
+  
+  isMigrationRunning = false;
+  isMigrationDone = true;
+
+  // Peshob xonasi raqamlarini 1 dan boshlanadigan qilib avtomatik to'g'irlash
+  nextTick(() => {
+    autoFixPeshobXonasiNumbers();
+  });
+};
+
+const autoFixPeshobXonasiNumbers = async () => {
+  let peshobRoomId = "";
+  let peshobOrgId = "";
+  let peshobFloorId = "";
+  let peshobOrgName = "";
+  let peshobFloorName = "";
+  let peshobRoomName = "";
+  
+  for (const org of locations.value) {
+    for (const floor of org.floors) {
+      for (const room of floor.rooms) {
+        if (room.name.toLowerCase().trim() === "peshob xonasi") {
+          peshobRoomId = room.id;
+          peshobOrgId = org.id;
+          peshobFloorId = floor.id;
+          peshobOrgName = org.name;
+          peshobFloorName = floor.name;
+          peshobRoomName = room.name;
+          break;
+        }
+      }
+    }
+  }
+  
+  if (!peshobRoomId) return;
+  
+  const roomAssets = assets.value.filter(a =>
+    a.roomId === peshobRoomId ||
+    ((a.org || "").toString().trim().toLowerCase() === peshobOrgName.toLowerCase() &&
+     (a.floor || "").toString().trim().toLowerCase() === peshobFloorName.toLowerCase() &&
+     (a.room || "").toString().trim().toLowerCase() === peshobRoomName.toLowerCase())
+  );
+  
+  if (roomAssets.length === 0) return;
+  
+  const hasHighNumbers = roomAssets.some(a => {
+    const parts = a.id.split("-");
+    const lastPart = parts[parts.length - 1];
+    const num = parseInt(lastPart, 10);
+    return !isNaN(num) && num > roomAssets.length;
+  });
+  
+  if (!hasHighNumbers) return;
+  
+  console.log("Auto-fixing Peshob xonasi asset numbers to start from 1...");
+  
+  const orgInitials = peshobOrgName
+    .split(/\s+/)
+    .map(w => w.charAt(0))
+    .join("")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+  
+  let floorCode = "";
+  const safeFloorName = peshobFloorName;
+  const parenthesizedFCode = safeFloorName.match(/\((F[0-9A-Z]+)\)/i);
+  if (parenthesizedFCode) {
+    floorCode = parenthesizedFCode[1].toUpperCase();
+  } else if (/^F[0-9A-Z]+$/i.test(safeFloorName)) {
+    floorCode = safeFloorName.toUpperCase();
+  } else {
+    let floorNum = safeFloorName.replace(/[^0-9]/g, "");
+    if (floorNum) {
+      floorCode = "F" + floorNum;
+    } else {
+      const initials = safeFloorName.split(/\s+/).map(w => w.charAt(0)).join("").replace(/[^a-zA-Z]/g, "").toUpperCase();
+      floorCode = "F" + (initials || safeFloorName.substring(0, 1).toUpperCase());
+    }
+  }
+  
+  roomAssets.sort((a, b) => (a.id || "").localeCompare(b.id || ""));
+  
+  const roomCode = "PX";
+  const prefix = `${orgInitials}-${floorCode}-${roomCode}-`.replace(/-+/g, "-");
+  
+  const useBatch = isOnlineMode.value && db.value;
+  let batch = null;
+  if (useBatch) {
+    batch = db.value.batch();
+  }
+  
+  const localMigratedAssets = [...assets.value];
+  let deletedIds = [];
+  let addedAssets = [];
+  
+  let serial = 1;
+  for (const asset of roomAssets) {
+    const formattedSerial = String(serial).padStart(4, "0");
+    const newId = prefix + formattedSerial;
+    
+    const updatedAsset = { 
+      ...asset, 
+      id: newId,
+      orgId: peshobOrgId,
+      floorId: peshobFloorId,
+      roomId: peshobRoomId
+    };
+    
+    if (useBatch) {
+      if (asset.id !== newId) {
+        batch.delete(db.value.collection("assets").doc(asset.id));
+        batch.set(db.value.collection("assets").doc(newId), updatedAsset);
+      } else {
+        batch.set(db.value.collection("assets").doc(asset.id), updatedAsset);
+      }
+    } else {
+      const idx = localMigratedAssets.findIndex(a => a.id === asset.id);
+      if (idx !== -1) {
+        if (asset.id !== newId) {
+          deletedIds.push(asset.id);
+          addedAssets.push(updatedAsset);
+        } else {
+          localMigratedAssets[idx] = updatedAsset;
+        }
+      }
+    }
+    serial++;
+  }
+  
+  if (useBatch) {
+    try {
+      await batch.commit();
+      console.log("Successfully auto-fixed Peshob xonasi numbers in Firestore.");
+    } catch (err) {
+      console.error("Auto-fixing Peshob xonasi batch error:", err);
+    }
+  } else {
+    let finalAssets = localMigratedAssets.filter(a => !deletedIds.includes(a.id));
+    finalAssets.push(...addedAssets);
+    assets.value = finalAssets;
+    saveAssetsToLocal();
+    console.log("Successfully auto-fixed Peshob xonasi numbers in LocalStorage.");
   }
 };
 
