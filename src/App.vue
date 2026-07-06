@@ -680,20 +680,89 @@ const generateInventoryId = (orgName, floorName, roomName) => {
   }
   
   // 3. Xona (raqamlar yoki bosh harflar)
-  let roomCode = safeRoomName.replace(/[^0-9]/g, "");
-  if (!roomCode) {
-    roomCode = safeRoomName
-      .split(/\s+/)
-      .map(w => w.charAt(0))
-      .join("")
-      .replace(/[^a-zA-Z]/g, "")
-      .substring(0, 3)
-      .toUpperCase();
+  const getBaseRoomCode = (name) => {
+    const sName = (name || "").toString().trim();
+    let code = sName.replace(/[^0-9]/g, "");
+    if (!code) {
+      code = sName
+        .split(/\s+/)
+        .map(w => w.charAt(0))
+        .join("")
+        .replace(/[^a-zA-Z]/g, "")
+        .substring(0, 3)
+        .toUpperCase();
+    }
+    if (!code) {
+      code = sName.substring(0, 3).replace(/[^a-zA-Z]/g, "").toUpperCase();
+    }
+    if (!code) code = "RM";
+    return code;
+  };
+
+  const org = locations.value.find(o => o.name === safeOrgName);
+  const floor = org ? org.floors.find(f => f.name === safeFloorName) : null;
+  const floorRooms = floor && floor.rooms ? floor.rooms : [];
+
+  // 1-qadam: Aktiv joylashuvlar ro'yxatidan kelib chiqib, xonaning dastlabki bosh harflarini aniqlaymiz
+  let roomCodeMap = {};
+  let codeCounts = {};
+  for (const r of floorRooms) {
+    const base = getBaseRoomCode(r);
+    if (!codeCounts[base]) {
+      codeCounts[base] = 1;
+      roomCodeMap[r] = base;
+    } else {
+      codeCounts[base]++;
+      roomCodeMap[r] = `${base}${codeCounts[base]}`;
+    }
   }
-  if (!roomCode) {
-    roomCode = safeRoomName.substring(0, 3).replace(/[^a-zA-Z]/g, "").toUpperCase();
+
+  let baseRoomCode = roomCodeMap[safeRoomName];
+  if (!baseRoomCode) {
+    const base = getBaseRoomCode(safeRoomName);
+    const count = Object.values(roomCodeMap).filter(c => c.startsWith(base)).length;
+    baseRoomCode = count > 0 ? `${base}${count + 1}` : base;
   }
-  if (!roomCode) roomCode = "RM";
+
+  // 2-qadam: Eski yoki o'chib ketgan boshqa xonalarga tegishli aktivlar bilan to'qnashuvni (conflict) oldini olish.
+  // Agar bazada ushbu prefix bilan boshqa nomdagi xonaning jihozlari mavjud bo'lsa, u holda yangi prefix tanlaymiz.
+  let roomCode = baseRoomCode;
+  const cleanBase = baseRoomCode.replace(/[0-9]/g, "");
+  const baseNumMatch = baseRoomCode.match(/[0-9]+$/);
+  let currentNum = baseNumMatch ? parseInt(baseNumMatch[0], 10) : 1;
+
+  while (true) {
+    const candidateCode = currentNum === 1 ? cleanBase : `${cleanBase}${currentNum}`;
+    const candidatePrefix = `${orgInitials}-${floorCode}-${candidateCode}-`.replace(/-+/g, "-");
+    
+    const isUsedByDifferentRoom = assets.value.some(a => {
+      const startsWithPrefix = a.id && a.id.startsWith(candidatePrefix);
+      if (startsWithPrefix) {
+        const diffOrg = (a.org || "").toString().trim().toLowerCase() !== safeOrgName.toLowerCase();
+        const diffFloor = (a.floor || "").toString().trim().toLowerCase() !== safeFloorName.toLowerCase();
+        const diffRoom = (a.room || "").toString().trim().toLowerCase() !== safeRoomName.toLowerCase();
+        
+        console.log("Prefix Collision Check:", {
+          id: a.id,
+          assetRoom: a.room,
+          targetRoom: safeRoomName,
+          diffOrg,
+          diffFloor,
+          diffRoom,
+          candidatePrefix
+        });
+        
+        return diffOrg || diffFloor || diffRoom;
+      }
+      return false;
+    });
+    
+    if (!isUsedByDifferentRoom) {
+      roomCode = candidateCode;
+      break;
+    }
+    currentNum++;
+  }
 
   // TGC-1-101- kabi prefix
   const prefix = `${orgInitials}-${floorCode}-${roomCode}-`.replace(/-+/g, "-");
@@ -720,6 +789,145 @@ const generateInventoryId = (orgName, floorName, roomName) => {
   const formattedSerial = String(nextSerial).padStart(4, "0");
   
   return prefix + formattedSerial;
+};
+
+const isMigratingIds = ref(false);
+
+const fixRoomAssetNumbers = async () => {
+  if (currentUserRole.value !== 'admin') return;
+  if (!selectedLocation.org || !selectedLocation.floor || !selectedLocation.room) return;
+  
+  const confirmMsg = `Diqqat! "${selectedLocation.room}" xonasidagi barcha jihozlarning inventar raqamlarini tartiblab, 1 dan boshlanadigan (masalan, PX2-0001) qilmoqchimisiz?\n\nBu mavjud jihozlarning ID raqamlarini o'zgartiradi va eski QR-kodlarni yaroqsiz qilishi mumkin!`;
+  if (!confirm(confirmMsg)) return;
+
+  isMigratingIds.value = true;
+  
+  try {
+    // 1. Xonadagi barcha jihozlarni olamiz
+    const roomAssets = assets.value.filter(a =>
+      (a.org || "").toString().trim().toLowerCase() === selectedLocation.org.toLowerCase() &&
+      (a.floor || "").toString().trim().toLowerCase() === selectedLocation.floor.toLowerCase() &&
+      (a.room || "").toString().trim().toLowerCase() === selectedLocation.room.toLowerCase()
+    );
+
+    // Tartiblaymiz (ID bo'yicha)
+    roomAssets.sort((a, b) => (a.id || "").localeCompare(b.id || ""));
+
+    // 2. Yangi prefixni aniqlaymiz.
+    const orgInitials = selectedLocation.org
+      .split(/\s+/)
+      .map(w => w.charAt(0))
+      .join("")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase();
+    
+    let floorCode = "";
+    const safeFloorName = selectedLocation.floor;
+    const parenthesizedFCode = safeFloorName.match(/\((F[0-9A-Z]+)\)/i);
+    if (parenthesizedFCode) {
+      floorCode = parenthesizedFCode[1].toUpperCase();
+    } else if (/^F[0-9A-Z]+$/i.test(safeFloorName)) {
+      floorCode = safeFloorName.toUpperCase();
+    } else {
+      let floorNum = safeFloorName.replace(/[^0-9]/g, "");
+      if (floorNum) {
+        floorCode = "F" + floorNum;
+      } else {
+        const initials = safeFloorName.split(/\s+/).map(w => w.charAt(0)).join("").replace(/[^a-zA-Z]/g, "").toUpperCase();
+        floorCode = "F" + (initials || safeFloorName.substring(0, 1).toUpperCase());
+      }
+    }
+
+    const getBaseRoomCode = (name) => {
+      const sName = (name || "").toString().trim();
+      let code = sName.replace(/[^0-9]/g, "");
+      if (!code) {
+        code = sName
+          .split(/\s+/)
+          .map(w => w.charAt(0))
+          .join("")
+          .replace(/[^a-zA-Z]/g, "")
+          .substring(0, 3)
+          .toUpperCase();
+      }
+      if (!code) {
+        code = sName.substring(0, 3).replace(/[^a-zA-Z]/g, "").toUpperCase();
+      }
+      if (!code) code = "RM";
+      return code;
+    };
+
+    const orgObj = locations.value.find(o => o.name === selectedLocation.org);
+    const floorObj = orgObj ? orgObj.floors.find(f => f.name === selectedLocation.floor) : null;
+    const floorRooms = floorObj && floorObj.rooms ? floorObj.rooms : [];
+
+    let roomCodeMap = {};
+    let codeCounts = {};
+    for (const r of floorRooms) {
+      const base = getBaseRoomCode(r);
+      if (!codeCounts[base]) {
+        codeCounts[base] = 1;
+        roomCodeMap[r] = base;
+      } else {
+        codeCounts[base]++;
+        roomCodeMap[r] = `${base}${codeCounts[base]}`;
+      }
+    }
+
+    let baseRoomCode = roomCodeMap[selectedLocation.room];
+    if (!baseRoomCode) {
+      const base = getBaseRoomCode(selectedLocation.room);
+      const count = Object.values(roomCodeMap).filter(c => c.startsWith(base)).length;
+      baseRoomCode = count > 0 ? `${base}${count + 1}` : base;
+    }
+
+    let roomCode = baseRoomCode;
+    const cleanBase = baseRoomCode.replace(/[0-9]/g, "");
+    const baseNumMatch = baseRoomCode.match(/[0-9]+$/);
+    let currentNum = baseNumMatch ? parseInt(baseNumMatch[0], 10) : 1;
+
+    while (true) {
+      const candidateCode = currentNum === 1 ? cleanBase : `${cleanBase}${currentNum}`;
+      const candidatePrefix = `${orgInitials}-${floorCode}-${candidateCode}-`.replace(/-+/g, "-");
+      
+      const isUsedByDifferentRoom = assets.value.some(a => 
+        a.id && 
+        a.id.startsWith(candidatePrefix) && 
+        ((a.org || "").toString().trim().toLowerCase() !== selectedLocation.org.toLowerCase() || 
+         (a.floor || "").toString().trim().toLowerCase() !== selectedLocation.floor.toLowerCase() || 
+         (a.room || "").toString().trim().toLowerCase() !== selectedLocation.room.toLowerCase())
+      );
+      
+      if (!isUsedByDifferentRoom) {
+        roomCode = candidateCode;
+        break;
+      }
+      currentNum++;
+    }
+
+    const prefix = `${orgInitials}-${floorCode}-${roomCode}-`.replace(/-+/g, "-");
+
+    // 3. Har bir assetni yangi ID bilan qayta yozamiz va eskisini o'chiramiz
+    let serial = 1;
+    for (const asset of roomAssets) {
+      const formattedSerial = String(serial).padStart(4, "0");
+      const newId = prefix + formattedSerial;
+      
+      if (asset.id !== newId) {
+        const updatedAsset = { ...asset, id: newId };
+        await db.value.collection("assets").doc(newId).set(updatedAsset);
+        await db.value.collection("assets").doc(asset.id).delete();
+      }
+      serial++;
+    }
+    
+    alert("Jihozlarning inventar raqamlari muvaffaqiyatli tartiblandi!");
+  } catch (err) {
+    console.error("Migration error:", err);
+    alert("Xatolik yuz berdi: " + err.message);
+  } finally {
+    isMigratingIds.value = false;
+  }
 };
 
 // Joylashuvlar o'zgarganda yangi IDni avtomatik generatsiya qilish
@@ -2208,6 +2416,12 @@ onMounted(() => {
           <button v-if="selectedLocation.type === 'ROOM' && activeLocationAssets.length > 0" type="button" @click="printAllRoomQrs" class="share-loc-btn print-room-qrs-btn" title="Xonadagi barcha jihozlarning QR-kod stikerlarini chop etish" style="margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem; border-color: var(--warning); color: var(--warning);">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="3" height="3"></rect><rect x="14" y="7" width="3" height="3"></rect><rect x="7" y="14" width="3" height="3"></rect><rect x="14" y="14" width="3" height="3"></rect></svg>
             <span style="font-size: 0.72rem; font-weight: 600;">Barcha QR stikerlar</span>
+          </button>
+
+          <!-- Xona raqamlarini to'g'irlash (migratsiya) tugmasi (Faqat admin uchun) -->
+          <button v-if="currentUserRole === 'admin' && selectedLocation.type === 'ROOM' && activeLocationAssets.length > 0" type="button" @click="fixRoomAssetNumbers" class="share-loc-btn fix-room-numbers-btn" :disabled="isMigratingIds" title="Xonadagi jihozlarning inventar raqamlarini tartiblab, 1 dan boshlanadigan qilish" style="margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem; border-color: #10B981; color: #10B981;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+            <span style="font-size: 0.72rem; font-weight: 600;">{{ isMigratingIds ? "Tartiblanmoqda..." : "Raqamlarni to'g'irlash (1 dan)" }}</span>
           </button>
         </div>
         
