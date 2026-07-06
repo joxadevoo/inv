@@ -19,12 +19,20 @@ const DEFAULT_LOCATIONS = [
       {
         id: "floor_default_1",
         name: "1-qavat",
-        rooms: ["101-xona", "102-xona", "Qabulxona"]
+        rooms: [
+          { id: "room_default_1_1", name: "101-xona" },
+          { id: "room_default_1_2", name: "102-xona" },
+          { id: "room_default_1_3", name: "Qabulxona" }
+        ]
       },
       {
         id: "floor_default_2",
         name: "2-qavat",
-        rooms: ["Majlislar Zali", "Direktor xonasi", "IT bo'limi"]
+        rooms: [
+          { id: "room_default_2_1", name: "Majlislar Zali" },
+          { id: "room_default_2_2", name: "Direktor xonasi" },
+          { id: "room_default_2_3", name: "IT bo'limi" }
+        ]
       }
     ]
   },
@@ -35,7 +43,10 @@ const DEFAULT_LOCATIONS = [
       {
         id: "floor_default_3",
         name: "1-qavat",
-        rooms: ["Kassa", "Omborxona"]
+        rooms: [
+          { id: "room_default_3_1", name: "Kassa" },
+          { id: "room_default_3_2", name: "Omborxona" }
+        ]
       }
     ]
   }
@@ -326,9 +337,15 @@ const rebuildLocationsFromAssets = () => {
 
     // 3. Find or create Room
     if (!floor.rooms) floor.rooms = [];
-    let roomExists = floor.rooms.some(r => r.toLowerCase() === roomName.toLowerCase());
-    if (!roomExists) {
-      floor.rooms.push(roomName);
+    const exists = floor.rooms.some(r => 
+      (r.name && r.name.toLowerCase() === roomName.toLowerCase()) || 
+      (asset.roomId && r.id === asset.roomId)
+    );
+    if (!exists) {
+      floor.rooms.push({
+        id: asset.roomId || ("room_" + Math.random().toString(36).substr(2, 9)),
+        name: roomName
+      });
       changed = true;
     }
   });
@@ -506,7 +523,10 @@ const selectedLocation = reactive({
   type: "GLOBAL",
   org: "",
   floor: "",
-  room: ""
+  room: "",
+  orgId: "",
+  floorId: "",
+  roomId: ""
 });
 
 // Qidiruv, saralash va filtrlash ko'rsatkichlari
@@ -550,6 +570,9 @@ const assetForm = reactive({
   org: "",
   floor: "",
   room: "",
+  orgId: "",
+  floorId: "",
+  roomId: "",
   owner: "",
   price: null,
   date: "",
@@ -594,15 +617,33 @@ const detailAsset = ref(null);
 // ==========================================================================
 // 5. CASCADING SELECT DROPDOWNS (IERARXIK FORM SELECTION)
 // ==========================================================================
+const locationNameMap = computed(() => {
+  const map = {};
+  for (const org of locations.value) {
+    map[org.id] = org.name;
+    if (org.floors) {
+      for (const floor of org.floors) {
+        map[floor.id] = floor.name;
+        if (floor.rooms) {
+          for (const room of floor.rooms) {
+            map[room.id] = room.name;
+          }
+        }
+      }
+    }
+  }
+  return map;
+});
+
 const availableFloors = computed(() => {
   if (!assetForm.org) return [];
-  const org = locations.value.find(o => o.name === assetForm.org);
+  const org = locations.value.find(o => o.id === assetForm.org || o.name === assetForm.org);
   return org ? org.floors : [];
 });
 
 const availableRooms = computed(() => {
   if (!assetForm.floor) return [];
-  const floor = availableFloors.value.find(f => f.name === assetForm.floor);
+  const floor = availableFloors.value.find(f => f.id === assetForm.floor || f.name === assetForm.floor);
   return floor ? floor.rooms : [];
 });
 
@@ -634,23 +675,38 @@ const getGlobalAssetCount = () => {
   return assets.value.length;
 };
 
-const getOrgAssetCount = (orgName) => {
-  return assets.value.filter(a => a.org === orgName).length;
+const getOrgAssetCount = (orgIdOrName) => {
+  return assets.value.filter(a => a.orgId === orgIdOrName || a.org === orgIdOrName).length;
 };
 
-const getFloorAssetCount = (orgName, floorName) => {
-  return assets.value.filter(a => a.org === orgName && a.floor === floorName).length;
+const getFloorAssetCount = (orgIdOrName, floorIdOrName) => {
+  return assets.value.filter(a => 
+    (a.orgId === orgIdOrName || a.org === orgIdOrName) && 
+    (a.floorId === floorIdOrName || a.floor === floorIdOrName)
+  ).length;
 };
 
-const getRoomAssetCount = (orgName, floorName, roomName) => {
-  return assets.value.filter(a => a.org === orgName && a.floor === floorName && a.room === roomName).length;
+const getRoomAssetCount = (orgIdOrName, floorIdOrName, roomIdOrName) => {
+  return assets.value.filter(a => 
+    (a.orgId === orgIdOrName || a.org === orgIdOrName) && 
+    (a.floorId === floorIdOrName || a.floor === floorIdOrName) && 
+    (a.roomId === roomIdOrName || a.room === roomIdOrName)
+  ).length;
 };
 
 // Tashkilot nomi bosh harflari, qavat va xonaga qarab dinamik ID generatsiya qilish
-const generateInventoryId = (orgName, floorName, roomName) => {
-  const safeOrgName = (orgName || "").toString().trim();
-  const safeFloorName = (floorName || "").toString().trim();
-  const safeRoomName = (roomName || "").toString().trim();
+const generateInventoryId = (orgIdOrName, floorIdOrName, roomIdOrName) => {
+  const matchedOrg = locations.value.find(o => o.id === orgIdOrName || o.name === orgIdOrName);
+  const matchedFloor = matchedOrg ? matchedOrg.floors.find(f => f.id === floorIdOrName || f.name === floorIdOrName) : null;
+  const matchedRoom = matchedFloor ? matchedFloor.rooms.find(r => r.id === roomIdOrName || r.name === roomIdOrName) : null;
+
+  const safeOrgName = matchedOrg ? matchedOrg.name : (orgIdOrName || "").toString().trim();
+  const safeFloorName = matchedFloor ? matchedFloor.name : (floorIdOrName || "").toString().trim();
+  const safeRoomName = matchedRoom ? matchedRoom.name : (roomIdOrName || "").toString().trim();
+
+  const orgId = matchedOrg ? matchedOrg.id : "";
+  const floorId = matchedFloor ? matchedFloor.id : "";
+  const roomId = matchedRoom ? matchedRoom.id : "";
 
   if (!safeOrgName) return "INV-0001";
   
@@ -699,25 +755,23 @@ const generateInventoryId = (orgName, floorName, roomName) => {
     return code;
   };
 
-  const org = locations.value.find(o => o.name === safeOrgName);
-  const floor = org ? org.floors.find(f => f.name === safeFloorName) : null;
-  const floorRooms = floor && floor.rooms ? floor.rooms : [];
+  const floorRooms = matchedFloor && matchedFloor.rooms ? matchedFloor.rooms : [];
 
   // 1-qadam: Aktiv joylashuvlar ro'yxatidan kelib chiqib, xonaning dastlabki bosh harflarini aniqlaymiz
   let roomCodeMap = {};
   let codeCounts = {};
   for (const r of floorRooms) {
-    const base = getBaseRoomCode(r);
+    const base = getBaseRoomCode(r.name);
     if (!codeCounts[base]) {
       codeCounts[base] = 1;
-      roomCodeMap[r] = base;
+      roomCodeMap[r.id] = base;
     } else {
       codeCounts[base]++;
-      roomCodeMap[r] = `${base}${codeCounts[base]}`;
+      roomCodeMap[r.id] = `${base}${codeCounts[base]}`;
     }
   }
 
-  let baseRoomCode = roomCodeMap[safeRoomName];
+  let baseRoomCode = roomCodeMap[roomId];
   if (!baseRoomCode) {
     const base = getBaseRoomCode(safeRoomName);
     const count = Object.values(roomCodeMap).filter(c => c.startsWith(base)).length;
@@ -738,20 +792,9 @@ const generateInventoryId = (orgName, floorName, roomName) => {
     const isUsedByDifferentRoom = assets.value.some(a => {
       const startsWithPrefix = a.id && a.id.startsWith(candidatePrefix);
       if (startsWithPrefix) {
-        const diffOrg = (a.org || "").toString().trim().toLowerCase() !== safeOrgName.toLowerCase();
-        const diffFloor = (a.floor || "").toString().trim().toLowerCase() !== safeFloorName.toLowerCase();
-        const diffRoom = (a.room || "").toString().trim().toLowerCase() !== safeRoomName.toLowerCase();
-        
-        console.log("Prefix Collision Check:", {
-          id: a.id,
-          assetRoom: a.room,
-          targetRoom: safeRoomName,
-          diffOrg,
-          diffFloor,
-          diffRoom,
-          candidatePrefix
-        });
-        
+        const diffOrg = orgId && a.orgId ? a.orgId !== orgId : (a.org || "").toString().trim().toLowerCase() !== safeOrgName.toLowerCase();
+        const diffFloor = floorId && a.floorId ? a.floorId !== floorId : (a.floor || "").toString().trim().toLowerCase() !== safeFloorName.toLowerCase();
+        const diffRoom = roomId && a.roomId ? a.roomId !== roomId : (a.room || "").toString().trim().toLowerCase() !== safeRoomName.toLowerCase();
         return diffOrg || diffFloor || diffRoom;
       }
       return false;
@@ -767,8 +810,12 @@ const generateInventoryId = (orgName, floorName, roomName) => {
   // TGC-1-101- kabi prefix
   const prefix = `${orgInitials}-${floorCode}-${roomCode}-`.replace(/-+/g, "-");
 
-  // Ushbu prefix bilan boshlanadigan joriy aktivlarni filtrlaymiz
-  const matchingAssets = assets.value.filter(a => a.id && a.id.startsWith(prefix));
+  // Ushbu prefix va joylashuvga mos keladigan joriy aktivlarni filtrlaymiz
+  const matchingAssets = assets.value.filter(a => 
+    a.id && 
+    a.id.startsWith(prefix) && 
+    (roomId && a.roomId ? a.roomId === roomId : (a.room || "").toString().trim().toLowerCase() === safeRoomName.toLowerCase())
+  );
   
   let nextSerial = 1;
   if (matchingAssets.length > 0) {
@@ -778,7 +825,6 @@ const generateInventoryId = (orgName, floorName, roomName) => {
       const num = parseInt(lastPart, 10);
       return isNaN(num) ? 0 : num;
     });
-    // O'chirilgan yoki bo'sh qolgan raqamlarni to'ldirish uchun ketma-ketlikdagi birinchi bo'sh musbat butun sonni topamiz
     const serialSet = new Set(serials);
     while (serialSet.has(nextSerial)) {
       nextSerial++;
@@ -857,24 +903,24 @@ const fixRoomAssetNumbers = async () => {
       return code;
     };
 
-    const orgObj = locations.value.find(o => o.name === selectedLocation.org);
-    const floorObj = orgObj ? orgObj.floors.find(f => f.name === selectedLocation.floor) : null;
+    const orgObj = locations.value.find(o => o.id === selectedLocation.orgId || o.name === selectedLocation.org);
+    const floorObj = orgObj ? orgObj.floors.find(f => f.id === selectedLocation.floorId || f.name === selectedLocation.floor) : null;
     const floorRooms = floorObj && floorObj.rooms ? floorObj.rooms : [];
 
     let roomCodeMap = {};
     let codeCounts = {};
     for (const r of floorRooms) {
-      const base = getBaseRoomCode(r);
+      const base = getBaseRoomCode(r.name);
       if (!codeCounts[base]) {
         codeCounts[base] = 1;
-        roomCodeMap[r] = base;
+        roomCodeMap[r.id] = base;
       } else {
         codeCounts[base]++;
-        roomCodeMap[r] = `${base}${codeCounts[base]}`;
+        roomCodeMap[r.id] = `${base}${codeCounts[base]}`;
       }
     }
 
-    let baseRoomCode = roomCodeMap[selectedLocation.room];
+    let baseRoomCode = roomCodeMap[selectedLocation.roomId];
     if (!baseRoomCode) {
       const base = getBaseRoomCode(selectedLocation.room);
       const count = Object.values(roomCodeMap).filter(c => c.startsWith(base)).length;
@@ -893,9 +939,9 @@ const fixRoomAssetNumbers = async () => {
       const isUsedByDifferentRoom = assets.value.some(a => 
         a.id && 
         a.id.startsWith(candidatePrefix) && 
-        ((a.org || "").toString().trim().toLowerCase() !== selectedLocation.org.toLowerCase() || 
-         (a.floor || "").toString().trim().toLowerCase() !== selectedLocation.floor.toLowerCase() || 
-         (a.room || "").toString().trim().toLowerCase() !== selectedLocation.room.toLowerCase())
+        ((a.orgId && selectedLocation.orgId ? a.orgId !== selectedLocation.orgId : (a.org || "").toString().trim().toLowerCase() !== selectedLocation.org.toLowerCase()) || 
+         (a.floorId && selectedLocation.floorId ? a.floorId !== selectedLocation.floorId : (a.floor || "").toString().trim().toLowerCase() !== selectedLocation.floor.toLowerCase()) || 
+         (a.roomId && selectedLocation.roomId ? a.roomId !== selectedLocation.roomId : (a.room || "").toString().trim().toLowerCase() !== selectedLocation.room.toLowerCase()))
       );
       
       if (!isUsedByDifferentRoom) {
@@ -913,10 +959,20 @@ const fixRoomAssetNumbers = async () => {
       const formattedSerial = String(serial).padStart(4, "0");
       const newId = prefix + formattedSerial;
       
+      const updatedAsset = { 
+        ...asset, 
+        id: newId,
+        orgId: selectedLocation.orgId,
+        floorId: selectedLocation.floorId,
+        roomId: selectedLocation.roomId
+      };
+
       if (asset.id !== newId) {
-        const updatedAsset = { ...asset, id: newId };
         await db.value.collection("assets").doc(newId).set(updatedAsset);
         await db.value.collection("assets").doc(asset.id).delete();
+      } else {
+        // Hatto ID o'zgarmagan bo'lsa ham, orgId/floorId/roomId yozib qo'yamiz
+        await db.value.collection("assets").doc(asset.id).set(updatedAsset);
       }
       serial++;
     }
@@ -981,9 +1037,16 @@ watch(() => assetForm.category, (newCategory) => {
 const activeLocationAssets = computed(() => {
   return assets.value.filter(a => {
     if (selectedLocation.type === "GLOBAL") return true;
-    if (selectedLocation.type === "ORG") return a.org === selectedLocation.org;
-    if (selectedLocation.type === "FLOOR") return a.org === selectedLocation.org && a.floor === selectedLocation.floor;
-    if (selectedLocation.type === "ROOM") return a.org === selectedLocation.org && a.floor === selectedLocation.floor && a.room === selectedLocation.room;
+    
+    const orgMatch = a.orgId === selectedLocation.orgId || a.org === selectedLocation.org;
+    if (selectedLocation.type === "ORG") return orgMatch;
+    
+    const floorMatch = a.floorId === selectedLocation.floorId || a.floor === selectedLocation.floor;
+    if (selectedLocation.type === "FLOOR") return orgMatch && floorMatch;
+    
+    const roomMatch = a.roomId === selectedLocation.roomId || a.room === selectedLocation.room;
+    if (selectedLocation.type === "ROOM") return orgMatch && floorMatch && roomMatch;
+    
     return true;
   });
 });
@@ -1114,22 +1177,25 @@ const toggleSidebar = () => {
   localStorage.setItem("inv_sidebar_collapsed", isSidebarCollapsed.value.toString());
 };
 
-const selectLoc = (type, org = "", floor = "", room = "") => {
+const selectLoc = (type, org = "", floor = "", room = "", orgId = "", floorId = "", roomId = "") => {
   selectedLocation.type = type;
   selectedLocation.org = org;
   selectedLocation.floor = floor;
   selectedLocation.room = room;
+  selectedLocation.orgId = orgId;
+  selectedLocation.floorId = floorId;
+  selectedLocation.roomId = roomId;
 
   // Tashkilot yoki qavat bosilganda avtomatik ravishda uni yoyib ko'rsatish (expand)
   if (type === "ORG") {
-    const orgObj = locations.value.find(o => o.name === org);
+    const orgObj = locations.value.find(o => o.id === orgId || o.name === org);
     if (orgObj) {
       expandedNodes.orgs[orgObj.id] = true;
     }
   } else if (type === "FLOOR") {
-    const orgObj = locations.value.find(o => o.name === org);
+    const orgObj = locations.value.find(o => o.id === orgId || o.name === org);
     if (orgObj) {
-      const floorObj = orgObj.floors.find(f => f.name === floor);
+      const floorObj = orgObj.floors.find(f => f.id === floorId || f.name === floor);
       if (floorObj) {
         expandedNodes.floors[floorObj.id] = true;
       }
@@ -1165,9 +1231,64 @@ const ensureLocationsStructureAndIds = (data) => {
     org.floors.forEach(floor => {
       if (!floor.id) floor.id = "floor_" + Math.random().toString(36).substr(2, 9);
       if (!floor.rooms) floor.rooms = [];
+      floor.rooms = floor.rooms.map((room, idx) => {
+        if (typeof room === "string") {
+          return {
+            id: `room_${floor.id}_${idx}_` + Math.random().toString(36).substr(2, 5),
+            name: room
+          };
+        }
+        if (room && typeof room === "object") {
+          if (!room.id) room.id = "room_" + Math.random().toString(36).substr(2, 9);
+          return room;
+        }
+        return { id: "room_" + Math.random().toString(36).substr(2, 9), name: "Noma'lum xona" };
+      });
     });
   });
   return data;
+};
+
+const migrateAssetsData = () => {
+  if (!locations.value.length || !assets.value.length) return;
+  
+  let migratedCount = 0;
+  
+  assets.value.forEach((asset) => {
+    if (asset.roomId) return;
+    
+    const matchedOrg = locations.value.find(o => o.name.toLowerCase().trim() === (asset.org || "").toString().toLowerCase().trim());
+    const matchedFloor = matchedOrg ? matchedOrg.floors.find(f => f.name.toLowerCase().trim() === (asset.floor || "").toString().toLowerCase().trim()) : null;
+    const matchedRoom = matchedFloor ? matchedFloor.rooms.find(r => r.name.toLowerCase().trim() === (asset.room || "").toString().toLowerCase().trim()) : null;
+    
+    if (matchedOrg || matchedFloor || matchedRoom) {
+      const updatedAsset = {
+        ...asset,
+        orgId: matchedOrg ? matchedOrg.id : "",
+        floorId: matchedFloor ? matchedFloor.id : "",
+        roomId: matchedRoom ? matchedRoom.id : ""
+      };
+      
+      migratedCount++;
+      
+      if (isOnlineMode.value && db.value) {
+        db.value.collection("assets").doc(asset.id).set(updatedAsset)
+          .catch(err => console.error("Asset auto-migration error:", err));
+      } else {
+        const idx = assets.value.findIndex(a => a.id === asset.id);
+        if (idx !== -1) {
+          assets.value[idx] = updatedAsset;
+        }
+      }
+    }
+  });
+  
+  if (migratedCount > 0) {
+    console.log(`Auto-migrated ${migratedCount} assets to use unique location IDs.`);
+    if (!isOnlineMode.value) {
+      saveAssetsToLocal();
+    }
+  }
 };
 
 const loadDatabase = () => {
@@ -1178,6 +1299,9 @@ const loadDatabase = () => {
   const checkLoadingState = () => {
     if (locationsLoaded && assetsLoaded) {
       isAssetsLoading.value = false;
+      nextTick(() => {
+        migrateAssetsData();
+      });
     }
   };
 
@@ -1271,14 +1395,14 @@ const openAddAssetModal = () => {
   assetForm.status = "Ishlatilmoqda";
   
   // Pre-fill joylashuvni tanlangan joylashuvga moslab tanlash
-  assetForm.org = selectedLocation.org || (locations.value[0] ? locations.value[0].name : "");
+  assetForm.org = selectedLocation.orgId || selectedLocation.org || (locations.value[0] ? locations.value[0].id : "");
   
   // Watcher-lar asinxron ishga tushib, tanlangan qiymatlarni o'chirib yubormasligi uchun
   // nextTick nested zanjiri orqali qadam-baqadam o'rnatamiz
   nextTick(() => {
-    assetForm.floor = selectedLocation.floor || (availableFloors.value[0] ? availableFloors.value[0].name : "");
+    assetForm.floor = selectedLocation.floorId || selectedLocation.floor || (availableFloors.value[0] ? availableFloors.value[0].id : "");
     nextTick(() => {
-      assetForm.room = selectedLocation.room || (availableRooms.value[0] ? availableRooms.value[0] : "");
+      assetForm.room = selectedLocation.roomId || selectedLocation.room || (availableRooms.value[0] ? availableRooms.value[0].id : "");
       
       // Joylashuvga qarab yangi inventar raqamini generatsiya qilish
       assetForm.id = generateInventoryId(assetForm.org, assetForm.floor, assetForm.room);
@@ -1306,13 +1430,13 @@ const openEditAssetModal = (asset) => {
   assetForm.sn = asset.sn || "";
   assetForm.category = asset.category;
   assetForm.status = asset.status;
-  assetForm.org = asset.org;
+  assetForm.org = asset.orgId || asset.org;
   
   // nextTick orqali cascading selects yuklanishini kutamiz
   nextTick(() => {
-    assetForm.floor = asset.floor;
+    assetForm.floor = asset.floorId || asset.floor;
     nextTick(() => {
-      assetForm.room = asset.room;
+      assetForm.room = asset.roomId || asset.room;
     });
   });
 
@@ -1327,6 +1451,20 @@ const openEditAssetModal = (asset) => {
 // Jihozni saqlash form topshirilganda
 const saveAsset = () => {
   if (currentUserRole.value === "viewer") return;
+
+  const matchedOrg = locations.value.find(o => o.id === assetForm.org || o.name === assetForm.org);
+  const matchedFloor = matchedOrg ? matchedOrg.floors.find(f => f.id === assetForm.floor || f.name === assetForm.floor) : null;
+  const matchedRoom = matchedFloor ? matchedFloor.rooms.find(r => r.id === assetForm.room || r.name === assetForm.room) : null;
+
+  const orgId = matchedOrg ? matchedOrg.id : "";
+  const orgName = matchedOrg ? matchedOrg.name : assetForm.org;
+  
+  const floorId = matchedFloor ? matchedFloor.id : "";
+  const floorName = matchedFloor ? matchedFloor.name : assetForm.floor;
+  
+  const roomId = matchedRoom ? matchedRoom.id : "";
+  const roomName = matchedRoom ? matchedRoom.name : assetForm.room;
+
   const newAsset = {
     id: assetForm.id.trim(),
     name: assetForm.name.trim(),
@@ -1334,9 +1472,12 @@ const saveAsset = () => {
     sn: assetForm.sn.trim(),
     category: assetForm.category,
     status: assetForm.status,
-    org: assetForm.org,
-    floor: assetForm.floor,
-    room: assetForm.room,
+    org: orgName,
+    floor: floorName,
+    room: roomName,
+    orgId: orgId,
+    floorId: floorId,
+    roomId: roomId,
     owner: assetForm.owner.trim() || "—",
     price: assetForm.price ? Number(assetForm.price) : 0,
     date: assetForm.date,
@@ -1448,10 +1589,13 @@ const saveLocation = () => {
     const floor = org.floors.find(f => f.name === locationForm.parentFloor);
     if (!floor) return;
     if (!floor.rooms) floor.rooms = [];
-    const exists = floor.rooms.some(r => r.toLowerCase() === name.toLowerCase());
+    const exists = floor.rooms.some(r => r.name.toLowerCase() === name.toLowerCase());
     if (exists) { return alert("Ushbu xona allaqachon mavjud!"); }
 
-    floor.rooms.push(name);
+    floor.rooms.push({
+      id: "room_" + Math.random().toString(36).substr(2, 9),
+      name: name
+    });
     addActivityLog(`Yangi xona qo'shildi: ${name} (Tashkilot: ${locationForm.parentOrg}, Qavat: ${locationForm.parentFloor})`);
     
     // Yangi xona qo'shilganda qavat panelini avtomatik yoyib ko'rsatish
@@ -1465,7 +1609,7 @@ const saveLocation = () => {
 // Joylashuvlarni (tashkilot, qavat, xona) o'chirish funksiyalari
 const deleteOrg = (org) => {
   if (currentUserRole.value !== "admin") return;
-  const assetCount = getOrgAssetCount(org.name);
+  const assetCount = getOrgAssetCount(org.id);
   if (assetCount > 0) {
     alert(`Ushbu tashkilotda ${assetCount} ta faol jihoz mavjud! O'chirishdan oldin ularni boshqa joyga ko'chiring yoki o'chiring.`);
     return;
@@ -1476,14 +1620,14 @@ const deleteOrg = (org) => {
   locations.value = locations.value.filter(o => o.id !== org.id);
   addActivityLog(`Tashkilot o'chirildi: ${org.name}`);
   saveLocationsToLocal();
-  if (selectedLocation.type === 'ORG' && selectedLocation.org === org.name) {
+  if (selectedLocation.type === 'ORG' && (selectedLocation.orgId === org.id || selectedLocation.org === org.name)) {
     selectLoc('GLOBAL');
   }
 };
 
 const deleteFloor = (org, floor) => {
   if (currentUserRole.value !== "admin") return;
-  const assetCount = getFloorAssetCount(org.name, floor.name);
+  const assetCount = getFloorAssetCount(org.id, floor.id);
   if (assetCount > 0) {
     alert(`Ushbu qavatda ${assetCount} ta faol jihoz mavjud! O'chirishdan oldin ularni boshqa joyga ko'chiring yoki o'chiring.`);
     return;
@@ -1497,14 +1641,15 @@ const deleteFloor = (org, floor) => {
     addActivityLog(`Qavat o'chirildi: ${floor.name} (Tashkilot: ${org.name})`);
     saveLocationsToLocal();
   }
-  if (selectedLocation.type === 'FLOOR' && selectedLocation.org === org.name && selectedLocation.floor === floor.name) {
+  if (selectedLocation.type === 'FLOOR' && (selectedLocation.orgId === org.id || selectedLocation.org === org.name) && (selectedLocation.floorId === floor.id || selectedLocation.floor === floor.name)) {
     selectLoc('GLOBAL');
   }
 };
 
-const deleteRoom = (org, floor, roomName) => {
+const deleteRoom = (org, floor, room) => {
   if (currentUserRole.value !== "admin") return;
-  const assetCount = getRoomAssetCount(org.name, floor.name, roomName);
+  const roomName = room.name;
+  const assetCount = getRoomAssetCount(org.id, floor.id, room.id);
   if (assetCount > 0) {
     alert(`Ushbu xonada ${assetCount} ta faol jihoz mavjud! O'chirishdan oldin ularni boshqa joyga ko'chiring yoki o'chiring.`);
     return;
@@ -1516,12 +1661,12 @@ const deleteRoom = (org, floor, roomName) => {
   if (orgObj && orgObj.floors) {
     const floorObj = orgObj.floors.find(f => f.id === floor.id);
     if (floorObj && floorObj.rooms) {
-      floorObj.rooms = floorObj.rooms.filter(r => r !== roomName);
+      floorObj.rooms = floorObj.rooms.filter(r => r.id !== room.id);
       addActivityLog(`Xona o'chirildi: ${roomName} (Tashkilot: ${org.name}, Qavat: ${floor.name})`);
       saveLocationsToLocal();
     }
   }
-  if (selectedLocation.type === 'ROOM' && selectedLocation.org === org.name && selectedLocation.floor === floor.name && selectedLocation.room === roomName) {
+  if (selectedLocation.type === 'ROOM' && (selectedLocation.orgId === org.id || selectedLocation.org === org.name) && (selectedLocation.floorId === floor.id || selectedLocation.floor === floor.name) && (selectedLocation.roomId === room.id || selectedLocation.room === roomName)) {
     selectLoc('GLOBAL');
   }
 };
@@ -1728,9 +1873,10 @@ const handleExcelImportFile = (file) => {
           org.floors.push(floor);
         }
 
-        let roomExists = floor.rooms.some(r => r.toLowerCase() === roomName.toLowerCase());
-        if (!roomExists) {
-          floor.rooms.push(roomName);
+        let roomObj = floor.rooms.find(r => r.name.toLowerCase() === roomName.toLowerCase());
+        if (!roomObj) {
+          roomObj = { id: "room_" + Math.random().toString(36).substr(2, 9), name: roomName };
+          floor.rooms.push(roomObj);
         }
 
         let category = row["Kategoriya"] || "Boshqa";
@@ -1764,6 +1910,9 @@ const handleExcelImportFile = (file) => {
           org: orgName,
           floor: floorName,
           room: roomName,
+          orgId: org.id,
+          floorId: floor.id,
+          roomId: roomObj.id,
           owner: owner.toString().trim(),
           price,
           date: date.toString().trim(),
@@ -2280,13 +2429,13 @@ onMounted(() => {
         <div class="orgs-tree-wrapper" id="orgsTreeWrapper">
           <div v-for="org in locations" :key="org.id" class="org-node" :class="{ 'expanded-node': expandedNodes.orgs[org.id] }" style="margin-bottom: 0.35rem;">
             <!-- Tashkilot (Filial) qatori -->
-            <div class="location-tree-item org-item" :class="{ active: selectedLocation.type === 'ORG' && selectedLocation.org === org.name }" @click="selectLoc('ORG', org.name)">
+            <div class="location-tree-item org-item" :class="{ active: selectedLocation.type === 'ORG' && (selectedLocation.orgId === org.id || selectedLocation.org === org.name) }" @click="selectLoc('ORG', org.name, '', '', org.id)">
               <span class="tree-toggle-arrow" @click.stop="toggleOrgCollapse(org.id)" style="margin-right: 4px; font-size: 0.65rem; color: var(--text-secondary); cursor: pointer;">
                 {{ expandedNodes.orgs[org.id] ? '▼' : '▶' }}
               </span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" class="tree-icon" style="color: var(--accent);"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
               <span class="tree-text" style="font-weight: 600;">{{ org.name }}</span>
-              <span class="tree-count-badge">{{ getOrgAssetCount(org.name) }}</span>
+              <span class="tree-count-badge">{{ getOrgAssetCount(org.id) }}</span>
               <div v-if="currentUserRole === 'admin'" class="node-actions">
                 <button @click.stop="openAddLocationModal('FLOOR', org.name)" class="action-icon-small" title="Qavat qo'shish">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -2300,13 +2449,13 @@ onMounted(() => {
             <!-- Qavatlar ro'yxati -->
             <div v-if="expandedNodes.orgs[org.id]" class="floors-wrapper" style="padding-left: 1.15rem; margin-top: 0.25rem;">
               <div v-for="floor in org.floors" :key="floor.id" class="floor-node" :class="{ 'expanded-node': expandedNodes.floors[floor.id] }" style="margin-bottom: 0.25rem;">
-                <div class="location-tree-item floor-item" :class="{ active: selectedLocation.type === 'FLOOR' && selectedLocation.org === org.name && selectedLocation.floor === floor.name }" @click="selectLoc('FLOOR', org.name, floor.name)">
+                <div class="location-tree-item floor-item" :class="{ active: selectedLocation.type === 'FLOOR' && (selectedLocation.orgId === org.id || selectedLocation.org === org.name) && (selectedLocation.floorId === floor.id || selectedLocation.floor === floor.name) }" @click="selectLoc('FLOOR', org.name, floor.name, '', org.id, floor.id)">
                   <span class="tree-toggle-arrow" @click.stop="toggleFloorCollapse(floor.id)" style="margin-right: 4px; font-size: 0.6rem; color: var(--text-secondary); cursor: pointer;">
                     {{ expandedNodes.floors[floor.id] ? '▼' : '▶' }}
                   </span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" class="tree-icon" style="color: var(--success);"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                   <span class="tree-text">{{ formatFloorDisplay(floor.name) }}</span>
-                  <span class="tree-count-badge">{{ getFloorAssetCount(org.name, floor.name) }}</span>
+                  <span class="tree-count-badge">{{ getFloorAssetCount(org.id, floor.id) }}</span>
                   <div v-if="currentUserRole === 'admin'" class="node-actions">
                     <button @click.stop="openAddLocationModal('ROOM', org.name, floor.name)" class="action-icon-small" title="Xona qo'shish">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -2319,10 +2468,10 @@ onMounted(() => {
                 
                 <!-- Xonalar ro'yxati -->
                 <div v-if="expandedNodes.floors[floor.id]" class="rooms-wrapper" style="padding-left: 1.15rem; margin-top: 0.2rem;">
-                  <div v-for="room in floor.rooms" :key="room" class="location-tree-item room-item" :class="{ active: selectedLocation.type === 'ROOM' && selectedLocation.org === org.name && selectedLocation.floor === floor.name && selectedLocation.room === room }" @click="selectLoc('ROOM', org.name, floor.name, room)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" class="tree-icon" :style="{ color: getRoomAssetCount(org.name, floor.name, room) > 0 ? 'var(--success)' : 'var(--danger)' }"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
-                    <span class="tree-text">{{ room }}</span>
-                    <span class="tree-count-badge">{{ getRoomAssetCount(org.name, floor.name, room) }}</span>
+                  <div v-for="room in floor.rooms" :key="room.id" class="location-tree-item room-item" :class="{ active: selectedLocation.type === 'ROOM' && (selectedLocation.orgId === org.id || selectedLocation.org === org.name) && (selectedLocation.floorId === floor.id || selectedLocation.floor === floor.name) && (selectedLocation.roomId === room.id || selectedLocation.room === room.name) }" @click="selectLoc('ROOM', org.name, floor.name, room.name, org.id, floor.id, room.id)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" class="tree-icon" :style="{ color: getRoomAssetCount(org.id, floor.id, room.id) > 0 ? 'var(--success)' : 'var(--danger)' }"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
+                    <span class="tree-text">{{ room.name }}</span>
+                    <span class="tree-count-badge">{{ getRoomAssetCount(org.id, floor.id, room.id) }}</span>
                     <div v-if="currentUserRole === 'admin'" class="node-actions">
                       <button @click.stop="deleteRoom(org, floor, room)" class="action-icon-small action-icon-danger" title="Xonani o'chirish">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -2716,21 +2865,21 @@ onMounted(() => {
           <div class="form-group">
             <label for="formAssetOrg">Tashkilot / Filial *</label>
             <select id="formAssetOrg" v-model="assetForm.org" required>
-              <option v-for="org in locations" :key="org.name" :value="org.name">{{ org.name }}</option>
+              <option v-for="org in locations" :key="org.id" :value="org.id">{{ org.name }}</option>
             </select>
           </div>
 
           <div class="form-group">
             <label for="formAssetFloor">Qavat *</label>
             <select id="formAssetFloor" v-model="assetForm.floor" required>
-              <option v-for="floor in availableFloors" :key="floor.name" :value="floor.name">{{ formatFloorDisplay(floor.name) }}</option>
+              <option v-for="floor in availableFloors" :key="floor.id" :value="floor.id">{{ formatFloorDisplay(floor.name) }}</option>
             </select>
           </div>
 
           <div class="form-group">
             <label for="formAssetRoom">Xona *</label>
             <select id="formAssetRoom" v-model="assetForm.room" required>
-              <option v-for="room in availableRooms" :key="room" :value="room">{{ room }}</option>
+              <option v-for="room in availableRooms" :key="room.id" :value="room.id">{{ room.name }}</option>
             </select>
           </div>
 
